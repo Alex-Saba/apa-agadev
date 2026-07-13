@@ -22,8 +22,10 @@ Squelette initial du plugin APA Agadev.
 == Automatic updates ==
 
 Les mises a jour sont distribuees depuis les Releases GitHub du depot
-`Alex-Saba/apa-agadev`. Chaque tag `v*` publie automatiquement l'archive
-`plugin-apa-agadev.zip` attendue par WordPress.
+`Alex-Saba/apa-agadev`. Chaque push sur `main` cree une Release `vX.Y.Z`, ou
+`X.Y.Z` correspond a la version declaree dans `plugin-apa-agadev.php`.
+WordPress telecharge directement le zipball de cette Release, puis restaure le
+dossier stable `plugin-apa-agadev` apres extraction.
 
 == Changelog ==
 

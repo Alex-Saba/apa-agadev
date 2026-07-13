@@ -4,7 +4,7 @@
  * Plugin URI: https://agadev.com
  * Description: Plugin WordPress APA Agadev.
  * Version: 2026.7.1
- * Author: Agadev
+ * Author: ACL
  * Author URI: https://agadev.com
  * Text Domain: plugin-apa-agadev
  * Domain Path: /languages

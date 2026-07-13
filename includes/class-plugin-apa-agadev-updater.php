@@ -10,80 +10,142 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Exposes GitHub releases to WordPress' native plugin updater.
+ * Integrates GitHub releases with WordPress' native plugin updater.
  */
 final class Plugin_Apa_Agadev_Updater
 {
-    private const UPDATE_URI = 'https://github.com/Alex-Saba/apa-agadev';
+    private const GITHUB_REPOSITORY = 'Alex-Saba/apa-agadev';
 
-    private const RELEASE_API_URL = 'https://api.github.com/repos/Alex-Saba/apa-agadev/releases/latest';
-
-    private const PACKAGE_ASSET_NAME = 'plugin-apa-agadev.zip';
+    private const PLUGIN_NAME = 'APA Agadev';
 
     private const PLUGIN_SLUG = 'plugin-apa-agadev';
 
-    private const RELEASE_CACHE_KEY = 'plugin_apa_agadev_latest_github_release';
-
     /**
-     * Registers update discovery and automatic installation hooks.
+     * Registers the update discovery, information and installation hooks.
      */
     public static function register(): void
     {
-        add_filter('update_plugins_github.com', [self::class, 'check_for_update'], 10, 4);
-        add_filter('auto_update_plugin', [self::class, 'enable_auto_update'], 10, 2);
+        add_filter('pre_set_site_transient_update_plugins', [self::class, 'check_for_updates']);
+        add_filter('plugins_api', [self::class, 'plugins_api'], 10, 3);
+        add_filter('upgrader_post_install', [self::class, 'after_upgrade'], 10, 3);
+        add_filter('auto_update_plugin', [self::class, 'allow_auto_update'], 10, 2);
     }
 
     /**
-     * Returns a WordPress update offer when a newer GitHub release exists.
+     * Adds the latest GitHub release to WordPress' plugin update transient.
      *
-     * The release must contain an asset named plugin-apa-agadev.zip. Deliberately
-     * avoiding the GitHub source archive keeps the installed plugin folder stable.
+     * @param mixed $transient Plugin update transient.
      *
-     * @param array|false $update      Existing update offer.
-     * @param array       $plugin_data Parsed plugin headers.
-     * @param string      $plugin_file Plugin basename.
-     * @param string[]    $locales     Installed locales.
-     *
-     * @return array|false
+     * @return mixed
      */
-    public static function check_for_update($update, array $plugin_data, string $plugin_file, array $locales)
+    public static function check_for_updates($transient)
     {
-        unset($locales);
+        if (! is_object($transient) || empty($transient->checked)) {
+            return $transient;
+        }
 
-        if (plugin_basename(PLUGIN_APA_AGADEV_FILE) !== $plugin_file) {
-            return $update;
+        $current_version = self::get_plugin_version();
+        $release = self::get_latest_release();
+
+        if ('' === $current_version || null === $release) {
+            return $transient;
+        }
+
+        $latest_version = ltrim((string) ($release['tag_name'] ?? ''), 'vV');
+
+        if ('' === $latest_version || ! version_compare($latest_version, $current_version, '>')) {
+            return $transient;
+        }
+
+        $plugin_basename = self::get_plugin_basename();
+        $transient->response[$plugin_basename] = (object) [
+            'slug'        => self::PLUGIN_SLUG,
+            'plugin'      => $plugin_basename,
+            'new_version' => $latest_version,
+            'package'     => self::get_github_zipball_url((string) ($release['tag_name'] ?? '')),
+            'url'         => self::get_repository_url(),
+        ];
+
+        return $transient;
+    }
+
+    /**
+     * Supplies the release details displayed by WordPress.
+     *
+     * @param mixed  $result Existing plugin API result.
+     * @param string $action Requested plugin API action.
+     * @param mixed  $args   Plugin API arguments.
+     *
+     * @return mixed
+     */
+    public static function plugins_api($result, string $action, $args)
+    {
+        if ('plugin_information' !== $action || empty($args->slug) || self::PLUGIN_SLUG !== $args->slug) {
+            return $result;
         }
 
         $release = self::get_latest_release();
 
-        if (false === $release || version_compare($release['version'], $plugin_data['Version'], '<=')) {
-            return false;
+        if (null === $release) {
+            return $result;
         }
 
-        return [
-            'id'           => self::UPDATE_URI,
-            'slug'         => self::PLUGIN_SLUG,
-            'plugin'       => $plugin_file,
-            'version'      => $release['version'],
-            'new_version'  => $release['version'],
-            'url'          => $release['url'],
-            'package'      => $release['package'],
-            'requires_php' => '8.0',
-            'autoupdate'   => true,
+        $tag = (string) ($release['tag_name'] ?? '');
+
+        return (object) [
+            'name'          => self::PLUGIN_NAME,
+            'slug'          => self::PLUGIN_SLUG,
+            'version'       => ltrim($tag, 'vV'),
+            'author'        => 'ACL',
+            'homepage'      => self::get_repository_url(),
+            'download_link' => self::get_github_zipball_url($tag),
+            'sections'      => [
+                'description' => $release['body'] ?? 'Mise a jour via GitHub.',
+            ],
         ];
     }
 
     /**
-     * Forces automatic updates only for this plugin.
+     * Restores the stable plugin directory after GitHub's zipball is extracted.
+     *
+     * @param mixed $response   Upgrader response.
+     * @param array $hook_extra Upgrader context.
+     * @param array $result     Installation result.
+     *
+     * @return mixed
+     */
+    public static function after_upgrade($response, array $hook_extra, array $result)
+    {
+        if (empty($hook_extra['plugin']) || self::get_plugin_basename() !== $hook_extra['plugin']) {
+            return $response;
+        }
+
+        $destination = (string) ($result['destination'] ?? '');
+
+        if ('' === $destination) {
+            return $response;
+        }
+
+        $plugin_directory = WP_PLUGIN_DIR . '/' . dirname(self::get_plugin_basename());
+
+        if (self::move_folder($destination, $plugin_directory)) {
+            activate_plugin(self::get_plugin_basename());
+        }
+
+        return $response;
+    }
+
+    /**
+     * Enables automatic installation only for APA Agadev updates.
      *
      * @param bool|null $update Current automatic-update decision.
      * @param object    $item   Update offer.
      *
      * @return bool|null
      */
-    public static function enable_auto_update($update, object $item)
+    public static function allow_auto_update($update, object $item)
     {
-        if (isset($item->slug) && self::PLUGIN_SLUG === $item->slug) {
+        if (! empty($item->plugin) && self::get_plugin_basename() === $item->plugin) {
             return true;
         }
 
@@ -91,77 +153,100 @@ final class Plugin_Apa_Agadev_Updater
     }
 
     /**
-     * Fetches and normalizes the latest public GitHub release.
-     *
-     * @return array{version: string, url: string, package: string}|false
+     * Fetches the latest public GitHub release.
      */
-    private static function get_latest_release()
+    private static function get_latest_release(): ?array
     {
-        $cached_release = get_site_transient(self::RELEASE_CACHE_KEY);
-
-        if (is_array($cached_release)) {
-            return $cached_release;
-        }
-
         $response = wp_remote_get(
-            self::RELEASE_API_URL,
+            'https://api.github.com/repos/' . self::GITHUB_REPOSITORY . '/releases/latest',
             [
                 'headers' => [
                     'Accept'     => 'application/vnd.github+json',
                     'User-Agent' => 'APA-Agadev-WordPress-Updater',
                 ],
-                'timeout' => 10,
+                'timeout' => 15,
             ]
         );
 
-        if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
-            return false;
-        }
-
-        $payload = json_decode(wp_remote_retrieve_body($response), true);
-
-        if (! is_array($payload) || empty($payload['tag_name']) || empty($payload['html_url'])) {
-            return false;
-        }
-
-        $package_url = self::find_package_url($payload['assets'] ?? []);
-
-        if (null === $package_url) {
-            return false;
-        }
-
-        $release = [
-            'version' => ltrim(sanitize_text_field($payload['tag_name']), 'vV'),
-            'url'     => esc_url_raw($payload['html_url']),
-            'package' => $package_url,
-        ];
-
-        set_site_transient(self::RELEASE_CACHE_KEY, $release, HOUR_IN_SECONDS);
-
-        return $release;
-    }
-
-    /**
-     * Finds the release asset built specifically for WordPress installation.
-     *
-     * @param mixed $assets GitHub release assets.
-     */
-    private static function find_package_url($assets): ?string
-    {
-        if (! is_array($assets)) {
+        if (is_wp_error($response)) {
             return null;
         }
 
-        foreach ($assets as $asset) {
-            if (
-                is_array($asset)
-                && self::PACKAGE_ASSET_NAME === ($asset['name'] ?? '')
-                && ! empty($asset['browser_download_url'])
-            ) {
-                return esc_url_raw($asset['browser_download_url']);
-            }
+        $status = (int) wp_remote_retrieve_response_code($response);
+
+        if ($status < 200 || $status >= 300) {
+            return null;
         }
 
-        return null;
+        $release = json_decode((string) wp_remote_retrieve_body($response), true);
+
+        return is_array($release) ? $release : null;
+    }
+
+    /**
+     * Builds the GitHub zipball URL for a release tag.
+     */
+    private static function get_github_zipball_url(string $tag): string
+    {
+        $url = 'https://api.github.com/repos/' . self::GITHUB_REPOSITORY . '/zipball';
+
+        return '' === $tag ? $url : $url . '/' . rawurlencode($tag);
+    }
+
+    /**
+     * Returns the repository homepage.
+     */
+    private static function get_repository_url(): string
+    {
+        return 'https://github.com/' . self::GITHUB_REPOSITORY;
+    }
+
+    /**
+     * Returns the WordPress plugin basename.
+     */
+    private static function get_plugin_basename(): string
+    {
+        return plugin_basename(PLUGIN_APA_AGADEV_FILE);
+    }
+
+    /**
+     * Reads the installed version from the plugin header.
+     */
+    private static function get_plugin_version(): string
+    {
+        if (! function_exists('get_plugin_data')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $plugin_data = get_plugin_data(PLUGIN_APA_AGADEV_FILE, false, false);
+
+        return isset($plugin_data['Version']) ? (string) $plugin_data['Version'] : '';
+    }
+
+    /**
+     * Moves the extracted GitHub folder to the expected WordPress directory.
+     */
+    private static function move_folder(string $from, string $to): bool
+    {
+        global $wp_filesystem;
+
+        if (! $wp_filesystem) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+
+        if (! $wp_filesystem) {
+            return false;
+        }
+
+        if (untrailingslashit($from) === untrailingslashit($to)) {
+            return true;
+        }
+
+        if ($wp_filesystem->exists($to)) {
+            $wp_filesystem->delete($to, true);
+        }
+
+        return $wp_filesystem->move($from, $to, true);
     }
 }
