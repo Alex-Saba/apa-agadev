@@ -1,0 +1,14 @@
+{
+  "name": "acl/plugin-apa-agadev",
+  "description": "WordPress client for APA data exposed by Maivou through ACL WordPress API Bridge.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "autoload": {
+    "psr-4": {
+      "PluginApaAgadev\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=8.0"
+  }
+}
