@@ -373,7 +373,7 @@ final class ShortcodeService
         }
 
         return sprintf(
-            '<div class="apa-agadev apa-agadev--error" role="alert">%s</div>',
+            '<div class="acl_shortcode_notice acl_shortcode_notice--error acl_shortcode_apa_error acl_shortcode_div" role="alert">%s</div>',
             esc_html($message)
         );
     }

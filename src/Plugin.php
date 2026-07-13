@@ -40,7 +40,7 @@ final class Plugin
         wp_register_style(
             'plugin-apa-agadev',
             PLUGIN_APA_AGADEV_URL . 'assets/apa-agadev.css',
-            [],
+            ['acl-shortcodes'],
             PLUGIN_APA_AGADEV_VERSION
         );
 

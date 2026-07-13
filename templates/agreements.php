@@ -10,11 +10,12 @@ if (! defined('ABSPATH')) {
 }
 ?>
 
-<div class="apa-agadev apa-agadev--agreements">
+<main class="acl_shortcode_page acl_shortcode_main">
+<section class="acl_shortcode_forms acl_shortcode_agreements acl_shortcode_div">
     <?php if ($agreements === []) : ?>
         <p><?php esc_html_e('Aucun accord APA disponible.', 'plugin-apa-agadev'); ?></p>
     <?php else : ?>
-        <div class="apa-agadev__grid">
+        <div class="acl_shortcode_list acl_shortcode_list--cards acl_shortcode_div">
             <?php foreach ($agreements as $agreement) : ?>
                 <?php
                 if (! is_array($agreement)) {
@@ -24,8 +25,8 @@ if (! defined('ABSPATH')) {
                 $user = is_array($agreement['user'] ?? null) ? $agreement['user'] : [];
                 $holder = trim((string) ($user['firstname'] ?? '') . ' ' . (string) ($user['lastname'] ?? ''));
                 ?>
-                <article class="apa-agadev__card">
-                    <h3><?php echo esc_html((string) ($agreement['code'] ?? $agreement['uuid'] ?? __('Accord APA', 'plugin-apa-agadev'))); ?></h3>
+                <article class="acl_shortcode_card acl_shortcode_article">
+                    <h3 class="acl_shortcode_title acl_shortcode_h3"><?php echo esc_html((string) ($agreement['code'] ?? $agreement['uuid'] ?? __('Accord APA', 'plugin-apa-agadev'))); ?></h3>
                     <p><strong><?php esc_html_e('Statut :', 'plugin-apa-agadev'); ?></strong> <?php echo esc_html((string) ($agreement['status'] ?? '')); ?></p>
                     <?php if ('' !== $holder) : ?>
                         <p><strong><?php esc_html_e('Titulaire :', 'plugin-apa-agadev'); ?></strong> <?php echo esc_html($holder); ?></p>
@@ -37,4 +38,5 @@ if (! defined('ABSPATH')) {
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-</div>
+</section>
+</main>
