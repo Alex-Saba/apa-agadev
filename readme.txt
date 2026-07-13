@@ -4,7 +4,7 @@ Tags: apa, agadev
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.2
+Stable tag: 2026.7.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,6 +49,9 @@ WordPress telecharge directement le zipball de cette Release, puis restaure le
 dossier stable `plugin-apa-agadev` apres extraction.
 
 == Changelog ==
+
+= 2026.7.3 =
+* Alignement des shortcodes APA sur la structure et les styles frontend ACL.
 
 = 2026.7.2 =
 * Ajout du formulaire APA interactif, de sa soumission et des lots publics via ACL WordPress API Bridge.
