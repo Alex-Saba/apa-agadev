@@ -1,0 +1,33 @@
+name: Publish plugin release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build WordPress plugin archive
+        run: |
+          mkdir -p build/plugin-apa-agadev
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='build' \
+            ./ build/plugin-apa-agadev/
+          cd build
+          zip -r plugin-apa-agadev.zip plugin-apa-agadev
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" build/plugin-apa-agadev.zip --verify-tag --generate-notes --title "${GITHUB_REF_NAME}"
