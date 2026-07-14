@@ -30,3 +30,28 @@
 .acl_shortcode_apa_form select[multiple] {
     min-height: 8rem;
 }
+
+/* Keep public lot cards readable on wide layouts and long identifiers contained. */
+.acl_shortcode_public_lots .acl_shortcode_grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.acl_shortcode_public_lots .acl_shortcode_card {
+    min-width: 0;
+}
+
+.acl_shortcode_public_lots .acl_shortcode_title {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 960px) {
+    .acl_shortcode_public_lots .acl_shortcode_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .acl_shortcode_public_lots .acl_shortcode_grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
