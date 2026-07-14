@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PluginApaAgadev;
 
+use PluginApaAgadev\Service\AdminDocumentationService;
 use PluginApaAgadev\Service\MaivouDataService;
 use PluginApaAgadev\Service\ShortcodeService;
 
@@ -14,9 +15,15 @@ final class Plugin
 {
     private ShortcodeService $shortcodes;
 
-    public function __construct(?ShortcodeService $shortcodes = null)
+    private AdminDocumentationService $adminDocumentation;
+
+    public function __construct(
+        ?ShortcodeService $shortcodes = null,
+        ?AdminDocumentationService $adminDocumentation = null
+    )
     {
         $this->shortcodes = $shortcodes ?? new ShortcodeService(new MaivouDataService());
+        $this->adminDocumentation = $adminDocumentation ?? new AdminDocumentationService();
     }
 
     /**
@@ -26,6 +33,7 @@ final class Plugin
     {
         $this->shortcodes->register();
         add_action('wp_enqueue_scripts', [$this, 'registerAssets']);
+        add_action('admin_menu', [$this->adminDocumentation, 'registerAdminMenu']);
 
         if (! function_exists('acl_flows_api_call')) {
             add_action('admin_notices', [$this, 'renderMissingBridgeNotice']);
