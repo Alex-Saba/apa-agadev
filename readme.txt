@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.5
+Stable tag: 2026.7.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -204,6 +204,11 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.6 =
+* Amelioration verticale et responsive de la fiche publique d'un lot.
+* Distinction visuelle des statuts vendu et annule.
+* Ajout d'un README GitHub aligne sur le style de ACL WordPress API Bridge.
 
 = 2026.7.5 =
 * Remplacement de la liste publique par la synchronisation machine des lots finalises.
