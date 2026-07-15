@@ -4,11 +4,11 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.4
+Stable tag: 2026.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Client WordPress des formulaires APA, des accords et des lots publics exposes par Maivou via ACL WordPress API Bridge.
+Client WordPress des formulaires APA, des accords et des fiches publiques de lots finalises exposees par Maivou via ACL WordPress API Bridge.
 
 == Description ==
 
@@ -19,7 +19,10 @@ Le plugin permet :
 * de recuperer le formulaire APA filtre pour l'utilisateur connecte ;
 * de transmettre une demande APA a Maivou ;
 * d'afficher les accords visibles par l'utilisateur ;
-* d'afficher les lots publics disponibles au statut `ready`.
+* de synchroniser localement les lots `sold` et `cancelled` ayant une request associee ;
+* d'exposer chaque lot finalise sur une fiche publique `/lot/{code}/`.
+
+Il n'existe aucune page de liste ou archive publique des lots.
 
 APA Agadev reste un client leger. Il ne gere ni l'authentification Maivou ni la
 configuration de l'API. Tous les appels sont delegues a la fonction
@@ -30,8 +33,8 @@ configuration de l'API. Tous les appels sont delegues a la fonction
 * WordPress 6.0 ou superieur ;
 * PHP 8.0 ou superieur ;
 * ACL WordPress API Bridge installe, active et configure ;
-* un utilisateur WordPress connecte et associe a une session Maivou valide ;
-* les permissions et scopes Maivou requis pour les donnees demandees.
+* le client machine Maivou autorise a demander le scope `lots.read` ;
+* la route Maivou `GET /api/machine/lots` disponible.
 
 Si ACL WordPress API Bridge est absent ou inactif, une notification explicite
 est affichee dans l'administration WordPress.
@@ -39,14 +42,13 @@ est affichee dans l'administration WordPress.
 == Installation ==
 
 1. Installer et activer `ACL WordPress API Bridge`.
-2. Configurer l'URL de l'API et les identifiants Maivou dans le Bridge.
+2. Configurer l'URL de l'API et les identifiants machine Maivou dans le Bridge.
 3. Copier le dossier `plugin-apa-agadev` dans `wp-content/plugins`.
 4. Activer `APA Agadev` depuis l'administration WordPress.
-5. Consulter `Reglages > APA Agadev` pour connaitre les shortcodes disponibles.
+5. Consulter `Reglages > APA Agadev` pour lancer ou controler la synchronisation.
 6. Inserer les shortcodes souhaites dans les pages WordPress.
 
-Le plugin possede un chargeur PSR-4 interne de secours. L'installation de
-Composer n'est donc pas obligatoire dans le paquet distribue.
+L'activation enregistre le cron horaire et les permaliens `/lot/{code}/`.
 
 == Configuration ==
 
@@ -55,18 +57,21 @@ La connexion a Maivou est configuree dans :
 `Reglages > ACL WordPress API Bridge`
 
 APA Agadev ne duplique pas ces reglages et ne stocke pas de second token API.
-L'utilisateur doit etre connecte pour acceder aux routes protegees. Les donnees
-retournees dependent de son role, de ses scopes et des regles de visibilite
-appliquees par Maivou.
+Les formulaires et accords utilisent la session de l'utilisateur connecte. La
+synchronisation des lots utilise exclusivement les client credentials du Bridge
+avec le scope `lots.read` et fonctionne sans utilisateur WordPress connecte.
 
-La page `Reglages > APA Agadev` fournit dans le back-office une reference des
-shortcodes, de leurs parametres et de leurs conditions de fonctionnement.
+La page `Reglages > APA Agadev` affiche :
+
+* la date de la derniere tentative de synchronisation ;
+* le nombre de lots synchronises ;
+* le nombre d'erreurs ;
+* le resultat explicite du dernier traitement ;
+* le bouton securise `Synchroniser maintenant`.
 
 == Flux fonctionnels ==
 
 = Formulaire APA (`[apa_agadev_form]`) =
-
-Le formulaire fonctionne en deux temps :
 
 1. Le plugin envoie `POST /api/_catalog` avec la cle `agreement`.
 2. Maivou retourne le formulaire filtre selon le role de l'utilisateur.
@@ -85,35 +90,56 @@ n'expose pas de contrat de televersement pour ces documents.
 2. Maivou applique l'authentification, les permissions et la visibilite du compte.
 3. Le plugin restitue uniquement les accords renvoyes par l'API.
 
-Un code HTTP `403` indique que le compte connecte ne dispose pas du scope ou de
-la permission necessaire. Le plugin ne contourne pas cette autorisation.
+= Synchronisation des lots finalises =
 
-= Lots publics (`[apa_agadev_public_lots]`) =
+1. WP-Cron declenche le traitement toutes les heures.
+2. Le plugin parcourt toutes les pages de `GET /api/machine/lots` par groupes de 100.
+3. Le Bridge obtient le jeton machine avec le scope `lots.read`.
+4. Le plugin accepte uniquement les lots `sold` ou `cancelled` possedant une request associee.
+5. Chaque lot est cree ou mis a jour dans le CPT local `apa_lot` selon son UUID, puis son code.
+6. Le payload public et l'association `request.uuid -> lot.code` sont conserves en metadata WordPress.
+7. Une erreur API ou de pagination n'efface aucun lot deja synchronise.
 
-1. Le plugin appelle toutes les pages de `GET /api/lots`, par lots de 100 elements.
-2. Maivou limite deja les resultats aux lots visibles par l'utilisateur.
-3. Le plugin conserve uniquement les lots dont le statut est exactement `ready`.
-4. Les cartes affichent le code, le produit, la quantite disponible et la province.
+Le plugin effectue egalement le controle des statuts cote WordPress. Un element
+non final ou sans request est refuse meme si le contrat distant derive.
 
-Les statuts `draft`, `pending`, `reserved`, `sold` et `cancelled` ne sont pas
-affiches dans cette liste. `Aucun lot public disponible.` signifie que l'appel a
-reussi mais qu'aucun lot visible au statut `ready` n'a ete retourne.
+= Fiche publique d'un lot =
+
+Chaque lot synchronise est publie sous l'URL canonique :
+
+`/lot/{code}/`
+
+La fiche affiche le code, le statut traduit (`Vendu` ou `Annule`), le produit,
+la quantite, le conditionnement, la province, le departement et la signature
+lorsqu'elle est disponible.
+
+Le CPT est exclu de la recherche WordPress et ne possede aucune archive publique.
+
+= Compatibilite des QR existants =
+
+Une ancienne URL dont le chemin contient uniquement l'UUID de la request est
+resolue grace a la metadata locale. Si la request est connue, WordPress effectue
+une redirection permanente vers `/lot/{code}/`. Si elle n'est pas synchronisee,
+WordPress retourne une erreur 404 explicite.
 
 == Shortcodes ==
 
 * `[apa_agadev_form]` : affiche le formulaire APA filtre et transmet la demande.
 * `[apa_agadev_form role="chercheur"]` : demande a Maivou le catalogue correspondant au role indique ; son utilisation reste soumise aux autorisations de l'API.
 * `[apa_agadev_agreements]` : affiche les accords APA visibles par l'utilisateur connecte.
-* `[apa_agadev_public_lots]` : affiche les lots visibles dont le statut est `ready`.
+
+Il n'existe plus de shortcode de liste de lots. L'ancien shortcode
+`[apa_agadev_public_lots]` n'est plus enregistre.
 
 == Routes Maivou utilisees ==
 
 * `POST /api/_catalog` : recuperation du formulaire filtre avec la cle `agreement` ;
 * `POST /api/agreements` : creation d'une demande APA ;
 * `GET /api/agreements` : consultation des accords visibles ;
-* `GET /api/lots` : consultation paginee des lots visibles.
+* `GET /api/machine/lots` : synchronisation paginee des lots finalises.
 
-Les erreurs HTTP et les reponses invalides de Maivou sont affichees explicitement.
+Les erreurs HTTP et les reponses invalides de Maivou sont affichees ou stockees
+explicitement dans le resultat de synchronisation.
 
 == Release automatique via GitHub Actions ==
 
@@ -144,18 +170,25 @@ Le depot etant public, aucun token GitHub n'est requis par APA Agadev.
 
 == Diagnostic ==
 
-= Erreur API HTTP 403 =
+= Synchronisation en erreur =
 
-* verifier que l'utilisateur est connecte dans WordPress ;
-* verifier que sa session Maivou est encore valide ;
-* verifier les scopes et permissions de son role dans Maivou ;
-* se deconnecter puis se reconnecter apres une modification de role ou de scope.
+* verifier l'URL et les client credentials dans ACL WordPress API Bridge ;
+* verifier que le client Maivou peut demander le scope `lots.read` ;
+* verifier que `GET /api/machine/lots` est disponible ;
+* consulter le resultat dans `Reglages > APA Agadev` ;
+* utiliser `Synchroniser maintenant` pour relancer le meme traitement que le cron.
 
-= Aucun lot public disponible =
+= Fiche de lot introuvable =
 
-* verifier qu'au moins un lot visible possede le statut `ready` ;
-* verifier que le compte peut consulter les lots publics ;
-* verifier que WordPress pointe vers le bon environnement Maivou.
+* verifier que le lot possede le statut `sold` ou `cancelled` ;
+* verifier qu'une request lui est associee ;
+* verifier qu'une synchronisation a reussi depuis sa finalisation ;
+* enregistrer a nouveau les permaliens WordPress si les regles de reecriture ont ete videes.
+
+= QR historique en erreur 404 =
+
+Le lot associe a l'UUID de request n'a pas encore ete synchronise. Le plugin ne
+fabrique aucune correspondance de remplacement.
 
 = Listes deroulantes du formulaire vides =
 
@@ -171,6 +204,14 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.5 =
+* Remplacement de la liste publique par la synchronisation machine des lots finalises.
+* Stockage local des lots vendus ou annules ayant une request associee.
+* Ajout des fiches publiques individuelles `/lot/{code}/` sans archive.
+* Ajout de la redirection des anciens QR bases sur l'UUID de request.
+* Ajout du cron horaire et de la synchronisation manuelle dans le back-office.
+* Suppression du shortcode `[apa_agadev_public_lots]`.
 
 = 2026.7.4 =
 * Amelioration responsive de la grille des lots publics.
