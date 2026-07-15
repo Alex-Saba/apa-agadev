@@ -23,7 +23,6 @@ final class ShortcodeService
     {
         add_shortcode('apa_agadev_form', [$this, 'renderAgreementForm']);
         add_shortcode('apa_agadev_agreements', [$this, 'renderAgreements']);
-        add_shortcode('apa_agadev_public_lots', [$this, 'renderPublicLots']);
     }
 
     /**
@@ -90,22 +89,6 @@ final class ShortcodeService
 
         return $this->renderTemplate('agreements', [
             'agreements' => is_array($response['data']) ? $response['data'] : [],
-        ]);
-    }
-
-    /**
-     * Renders all visible lots whose Maivou business status is public.
-     */
-    public function renderPublicLots(): string
-    {
-        $response = $this->data->getPublicLots();
-
-        if (! $response['ok']) {
-            return $this->renderError($response);
-        }
-
-        return $this->renderTemplate('public-lots', [
-            'lots' => is_array($response['data']) ? $response['data'] : [],
         ]);
     }
 

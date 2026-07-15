@@ -31,27 +31,45 @@
     min-height: 8rem;
 }
 
-/* Keep public lot cards readable on wide layouts and long identifiers contained. */
-.acl_shortcode_public_lots .acl_shortcode_grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+.acl_shortcode_lot_detail {
+    margin-inline: auto;
+    max-width: 72rem;
 }
 
-.acl_shortcode_public_lots .acl_shortcode_card {
-    min-width: 0;
+.acl_shortcode_lot_detail .acl_shortcode_header {
+    display: grid;
+    gap: 0.75rem;
 }
 
-.acl_shortcode_public_lots .acl_shortcode_title {
+.acl_shortcode_lot_detail .acl_shortcode_title,
+.acl_shortcode_lot_detail .acl_shortcode_lot_signature code {
     overflow-wrap: anywhere;
 }
 
-@media (max-width: 960px) {
-    .acl_shortcode_public_lots .acl_shortcode_grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+.acl_shortcode_lot_status {
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    display: inline-flex;
+    font-weight: 600;
+    justify-self: start;
+    padding: 0.35rem 0.75rem;
 }
 
-@media (max-width: 640px) {
-    .acl_shortcode_public_lots .acl_shortcode_grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
+.acl_shortcode_lot_fields {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    margin-top: 1.5rem;
+}
+
+.acl_shortcode_lot_field {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.acl_shortcode_lot_signature {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
 }

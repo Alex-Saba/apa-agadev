@@ -9,10 +9,6 @@ namespace PluginApaAgadev\Service;
  */
 final class MaivouDataService
 {
-    private const PUBLIC_LOT_STATUS = 'ready';
-
-    private const LOTS_PER_PAGE = 100;
-
     /**
      * Returns the role-filtered APA agreement form schema.
      *
@@ -142,77 +138,23 @@ final class MaivouDataService
     }
 
     /**
-     * Reads every visible lot page and retains only public ready lots.
-     *
-     * The current Maivou endpoint does not expose a status filter. Walking the
-     * complete pagination avoids returning an incomplete first-page subset.
+     * Reads one machine-authenticated page of final lots for the WordPress cron.
      *
      * @return array{ok:bool,status:int,data:mixed,headers:array,set_cookie:array,error:?string}
      */
-    public function getPublicLots(): array
+    public function getFinalLotsPage(int $page, int $per_page = 100): array
     {
-        $public_lots = [];
-        $page = 1;
-
-        do {
-            $response = $this->call([
-                'endpoint' => '/lots',
-                'method' => 'GET',
-                'params' => [
-                    'per_page' => self::LOTS_PER_PAGE,
-                    'page' => $page,
-                ],
-                'auth' => 'user',
-            ]);
-
-            if (! $response['ok']) {
-                return $response;
-            }
-
-            $payload = $response['data'];
-
-            if (
-                ! is_array($payload)
-                || ! isset($payload['data'], $payload['current_page'], $payload['last_page'])
-                || ! is_array($payload['data'])
-            ) {
-                return $this->errorResponse(
-                    502,
-                    __('La réponse Maivou pour les lots est invalide.', 'plugin-apa-agadev')
-                );
-            }
-
-            foreach ($payload['data'] as $lot) {
-                if (
-                    is_array($lot)
-                    && isset($lot['status'])
-                    && (string) $lot['status'] === self::PUBLIC_LOT_STATUS
-                ) {
-                    $public_lots[] = $lot;
-                }
-            }
-
-            $current_page = (int) $payload['current_page'];
-            $last_page = (int) $payload['last_page'];
-
-            if ($current_page < 1 || $last_page < $current_page) {
-                return $this->errorResponse(
-                    502,
-                    __('La pagination Maivou pour les lots est invalide.', 'plugin-apa-agadev')
-                );
-            }
-
-            $page = $current_page + 1;
-        } while ($current_page < $last_page);
-
-        return [
-            'ok' => true,
-            'status' => 200,
-            'data' => $public_lots,
-            'headers' => [],
-            'set_cookie' => [],
-            'error' => null,
-        ];
+        return $this->call([
+            'endpoint' => '/machine/lots',
+            'method' => 'GET',
+            'params' => [
+                'per_page' => $per_page,
+                'page' => $page,
+            ],
+            // The Bridge resolves /api/machine/* with client credentials.
+            'scope' => 'lots.read',
+            'user_id' => 0,
+        ]);
     }
 
     /**
