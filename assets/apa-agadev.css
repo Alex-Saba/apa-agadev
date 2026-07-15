@@ -33,17 +33,25 @@
 
 .acl_shortcode_lot_detail {
     margin-inline: auto;
-    max-width: 72rem;
+    max-width: 48rem;
+    width: 100%;
 }
 
 .acl_shortcode_lot_detail .acl_shortcode_header {
     display: grid;
-    gap: 0.75rem;
+    gap: 0.65rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--ui-line, #e6eaf0);
 }
 
 .acl_shortcode_lot_detail .acl_shortcode_title,
 .acl_shortcode_lot_detail .acl_shortcode_lot_signature code {
     overflow-wrap: anywhere;
+}
+
+.acl_shortcode_lot_detail .acl_shortcode_title {
+    font-size: clamp(1.65rem, 5vw, 2.35rem);
+    letter-spacing: -0.025em;
 }
 
 .acl_shortcode_lot_status {
@@ -52,24 +60,73 @@
     display: inline-flex;
     font-weight: 600;
     justify-self: start;
-    padding: 0.35rem 0.75rem;
+    margin-top: 0.25rem;
+    padding: 0.4rem 0.85rem;
+}
+
+.acl_shortcode_lot_status--sold {
+    background: #effaf4;
+    border-color: #9bd4b5;
+    color: #176b46;
+}
+
+.acl_shortcode_lot_status--cancelled {
+    background: #fff4f1;
+    border-color: #e8b4ac;
+    color: #9a3024;
 }
 
 .acl_shortcode_lot_fields {
     display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: 0.9rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 1.5rem;
 }
 
 .acl_shortcode_lot_field {
+    background: var(--ui-panel, #fff);
+    border: 1px solid var(--ui-line, #e6eaf0);
+    border-radius: 12px;
     display: grid;
-    gap: 0.35rem;
+    gap: 0.45rem;
     min-width: 0;
+    padding: 1rem;
+}
+
+.acl_shortcode_lot_field strong,
+.acl_shortcode_lot_signature strong {
+    color: var(--ui-muted, #5e6776);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.acl_shortcode_lot_field span {
+    font-size: 1.05rem;
+    line-height: 1.45;
 }
 
 .acl_shortcode_lot_signature {
+    background: var(--ui-panel, #fff);
+    border: 1px solid var(--ui-line, #e6eaf0);
+    border-radius: 12px;
     display: grid;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
+    gap: 0.65rem;
+    margin-top: 0.9rem;
+    padding: 1rem;
+}
+
+.acl_shortcode_lot_signature code {
+    background: var(--ui-bg, #f8fafc);
+    border-radius: 8px;
+    color: var(--ui-ink, #14181f);
+    display: block;
+    padding: 0.75rem;
+    white-space: normal;
+}
+
+@media (max-width: 600px) {
+    .acl_shortcode_lot_fields {
+        grid-template-columns: 1fr;
+    }
 }
