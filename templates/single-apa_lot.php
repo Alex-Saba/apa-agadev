@@ -51,6 +51,16 @@ while (have_posts()) :
         'annule' => __('Annulé', 'plugin-apa-agadev'),
         'sold' => __('Vendu', 'plugin-apa-agadev'),
         'cancelled' => __('Annulé', 'plugin-apa-agadev'),
+        'draft' => __('Brouillon', 'plugin-apa-agadev'),
+        'submitted' => __('Soumise', 'plugin-apa-agadev'),
+        'under_review' => __('En cours d’examen', 'plugin-apa-agadev'),
+        'in_review' => __('En cours d’examen', 'plugin-apa-agadev'),
+        'review' => __('En cours d’examen', 'plugin-apa-agadev'),
+        'validation' => __('En validation', 'plugin-apa-agadev'),
+        'approved' => __('Approuvée', 'plugin-apa-agadev'),
+        'rejected' => __('Rejetée', 'plugin-apa-agadev'),
+        'completed' => __('Terminée', 'plugin-apa-agadev'),
+        'done' => __('Terminée', 'plugin-apa-agadev'),
     ];
     $translate_status = static function (mixed $value) use ($status_labels): string {
         $status_value = trim((string) $value);
@@ -89,9 +99,8 @@ while (have_posts()) :
     $claimant_name = $public_name($claimed_by);
     $claimed_at_label = $format_public_date($claim['claimed_at'] ?? null);
     $request_name = trim((string) ($request['name'] ?? ''));
-    $request_uuid = trim((string) ($request['uuid'] ?? ''));
     $request_status_label = $translate_status($request['status'] ?? '');
-    $has_request_details = '' !== $request_name || '' !== $request_uuid || '' !== $request_status_label;
+    $has_request_details = '' !== $request_name || '' !== $request_status_label;
     $post_id = get_the_ID();
     $product_image_id = absint(get_post_meta($post_id, LotMediaService::META_PRODUCT_IMAGE, true));
     $zone_image_id = absint(get_post_meta($post_id, LotMediaService::META_ZONE_IMAGE, true));
@@ -196,7 +205,6 @@ while (have_posts()) :
                             <div class="acl_shortcode_lot_request acl_shortcode_div">
                                 <dl class="acl_shortcode_lot_request_fields">
                                     <?php if ('' !== $request_name) : ?><div><dt><?php esc_html_e('Demande', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html($request_name); ?></dd></div><?php endif; ?>
-                                    <?php if ('' !== $request_uuid) : ?><div><dt><?php esc_html_e('Identifiant', 'plugin-apa-agadev'); ?></dt><dd><code><?php echo esc_html($request_uuid); ?></code></dd></div><?php endif; ?>
                                     <?php if ('' !== $request_status_label) : ?><div><dt><?php esc_html_e('Statut', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html($request_status_label); ?></dd></div><?php endif; ?>
                                 </dl>
                             </div>
