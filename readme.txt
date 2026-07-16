@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.9
+Stable tag: 2026.7.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -212,6 +212,10 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.10 =
+* Suppression du pictogramme affiche devant le conditionnement.
+* Harmonisation de la typographie des informations publiques du lot.
 
 = 2026.7.9 =
 * Suppression de l'identifiant technique de la demande sur la fiche publique.
