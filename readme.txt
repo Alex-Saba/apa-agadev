@@ -117,6 +117,10 @@ la date de claim, la request associee, son statut et son historique public.
 Les emails, telephones, permissions, metadata privees, pieces jointes et
 identifiants numeriques internes ne sont jamais affiches sur cette fiche.
 
+Les images du produit, de la zone, du collecteur et du reclamant sont choisies
+pour chaque lot dans la mediatheque WordPress. Elles ne sont pas remplacees par
+la synchronisation Maivou.
+
 Le CPT est exclu de la recherche WordPress et ne possede aucune archive publique.
 
 = Compatibilite des QR existants =
@@ -213,6 +217,8 @@ pour le champ concerne.
 * Ajout du collecteur et du reclamant sur la fiche publique du lot.
 * Ajout de la request de claim, de son statut et de son historique public.
 * Ajout d'une chronologie responsive sans exposition des donnees privees.
+* Nouvelle presentation inspiree de la fiche de tracabilite Maivou.
+* Gestion de quatre images par lot depuis la mediatheque WordPress.
 
 = 2026.7.6 =
 * Amelioration verticale et responsive de la fiche publique d'un lot.

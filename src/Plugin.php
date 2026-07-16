@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PluginApaAgadev;
 
 use PluginApaAgadev\Service\AdminDocumentationService;
+use PluginApaAgadev\Service\LotMediaService;
 use PluginApaAgadev\Service\LotSyncService;
 use PluginApaAgadev\Service\MaivouDataService;
 use PluginApaAgadev\Service\ShortcodeService;
@@ -20,16 +21,20 @@ final class Plugin
 
     private LotSyncService $lotSync;
 
+    private LotMediaService $lotMedia;
+
     public function __construct(
         ?ShortcodeService $shortcodes = null,
         ?AdminDocumentationService $adminDocumentation = null,
-        ?LotSyncService $lotSync = null
+        ?LotSyncService $lotSync = null,
+        ?LotMediaService $lotMedia = null
     )
     {
         $data = new MaivouDataService();
         $this->shortcodes = $shortcodes ?? new ShortcodeService($data);
         $this->adminDocumentation = $adminDocumentation ?? new AdminDocumentationService();
         $this->lotSync = $lotSync ?? new LotSyncService($data);
+        $this->lotMedia = $lotMedia ?? new LotMediaService();
     }
 
     /**
@@ -46,6 +51,9 @@ final class Plugin
         add_action('wp_enqueue_scripts', [$this, 'registerAssets']);
         add_action('wp_enqueue_scripts', [$this->lotSync, 'enqueueSingleAssets'], 20);
         add_action('admin_menu', [$this->adminDocumentation, 'registerAdminMenu']);
+        add_action('add_meta_boxes_' . LotSyncService::POST_TYPE, [$this->lotMedia, 'registerMetaBox']);
+        add_action('admin_enqueue_scripts', [$this->lotMedia, 'enqueueAdminAssets']);
+        add_action('save_post_' . LotSyncService::POST_TYPE, [$this->lotMedia, 'saveMetaBox'], 10, 2);
         add_filter('query_vars', [$this->lotSync, 'registerQueryVar']);
         add_filter('template_include', [$this->lotSync, 'filterSingleTemplate']);
         add_action('template_redirect', [$this->lotSync, 'redirectLegacyRequestUuid']);

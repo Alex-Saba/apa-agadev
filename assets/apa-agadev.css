@@ -1,6 +1,6 @@
 /*
- * APA-specific layout only. Typography, colors, controls and buttons are
- * intentionally inherited from ACL WordPress API Bridge and the active theme.
+ * APA-specific layout only. Typography and shared controls remain inherited
+ * from ACL WordPress API Bridge and the active WordPress theme.
  */
 .acl_shortcode_apa_form .acl_shortcode_sections,
 .acl_shortcode_apa_form .acl_shortcode_fields,
@@ -32,36 +32,83 @@
 }
 
 .acl_shortcode_lot_detail {
+    --lot-accent: #d96b16;
+    --lot-accent-soft: #fff2e6;
+    --lot-ink: #1c1c1a;
+    --lot-muted: #66645f;
+    --lot-line: #e8e6e1;
+    --lot-section: #f6f6f4;
+    background: #fff;
+    border: 1px solid var(--lot-line);
+    border-radius: 0;
+    box-shadow: 0 20px 50px rgba(35, 31, 26, 0.08);
+    color: var(--lot-ink);
     margin-inline: auto;
-    max-width: 48rem;
+    max-width: 64rem;
+    overflow: hidden;
+    padding: 0;
     width: 100%;
 }
 
-.acl_shortcode_lot_detail .acl_shortcode_header {
+.acl_shortcode_lot_hero {
+    align-items: center;
     display: grid;
-    gap: 0.65rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--ui-line, #e6eaf0);
+    gap: 2rem;
+    grid-template-columns: minmax(0, 1.15fr) minmax(15rem, 0.85fr);
+    padding: clamp(1.5rem, 4vw, 3rem);
 }
 
-.acl_shortcode_lot_detail .acl_shortcode_title,
-.acl_shortcode_lot_detail .acl_shortcode_lot_signature code {
-    overflow-wrap: anywhere;
+.acl_shortcode_lot_hero_content {
+    min-width: 0;
+}
+
+.acl_shortcode_lot_detail .acl_shortcode_eyebrow {
+    color: var(--lot-accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
 }
 
 .acl_shortcode_lot_detail .acl_shortcode_title {
-    font-size: clamp(1.65rem, 5vw, 2.35rem);
-    letter-spacing: -0.025em;
+    color: var(--lot-ink);
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    margin: 0.5rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.acl_shortcode_lot_code {
+    color: var(--lot-muted);
+    font-size: 0.95rem;
+    margin: 0.5rem 0 1rem;
+    overflow-wrap: anywhere;
+}
+
+.acl_shortcode_lot_hero_media {
+    background: var(--lot-section);
+    border-radius: 1rem;
+    margin: 0;
+    overflow: hidden;
+}
+
+.acl_shortcode_lot_hero_media img {
+    aspect-ratio: 4 / 3;
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
 }
 
 .acl_shortcode_lot_status {
+    background: #fff;
     border: 1px solid currentColor;
     border-radius: 999px;
     display: inline-flex;
-    font-weight: 600;
-    justify-self: start;
-    margin-top: 0.25rem;
-    padding: 0.4rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.42rem 0.9rem;
 }
 
 .acl_shortcode_lot_status--sold {
@@ -76,105 +123,159 @@
     color: #9a3024;
 }
 
-.acl_shortcode_lot_fields {
-    display: grid;
-    gap: 0.9rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 1.5rem;
+.acl_shortcode_lot_section {
+    padding: clamp(1.5rem, 4vw, 3rem);
 }
 
-.acl_shortcode_lot_field {
-    background: var(--ui-panel, #fff);
-    border: 1px solid var(--ui-line, #e6eaf0);
-    border-radius: 12px;
-    display: grid;
-    gap: 0.45rem;
-    min-width: 0;
-    padding: 1rem;
-}
-
-.acl_shortcode_lot_field strong,
-.acl_shortcode_lot_signature strong {
-    color: var(--ui-muted, #5e6776);
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.acl_shortcode_lot_field span {
-    font-size: 1.05rem;
-    line-height: 1.45;
-}
-
-.acl_shortcode_lot_signature {
-    background: var(--ui-panel, #fff);
-    border: 1px solid var(--ui-line, #e6eaf0);
-    border-radius: 12px;
-    display: grid;
-    gap: 0.65rem;
-    margin-top: 0.9rem;
-    padding: 1rem;
-}
-
-.acl_shortcode_lot_signature code {
-    background: var(--ui-bg, #f8fafc);
-    border-radius: 8px;
-    color: var(--ui-ink, #14181f);
-    display: block;
-    padding: 0.75rem;
-    white-space: normal;
-}
-
-.acl_shortcode_lot_traceability {
-    border-top: 1px solid var(--ui-line, #e6eaf0);
-    display: grid;
-    gap: 0.9rem;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
+.acl_shortcode_lot_section:nth-of-type(even) {
+    background: var(--lot-section);
 }
 
 .acl_shortcode_lot_section_title {
-    font-size: 1.25rem;
-    margin: 0 0 0.15rem;
+    align-items: center;
+    display: flex;
+    font-size: clamp(1.25rem, 3vw, 1.65rem);
+    gap: 0.65rem;
+    margin: 0 0 1.25rem;
 }
 
-.acl_shortcode_lot_context {
+.acl_shortcode_lot_section_title::before {
+    background: var(--lot-accent);
+    border-radius: 0.35rem;
+    content: "";
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+.acl_shortcode_lot_summary {
+    background: var(--lot-section);
+}
+
+.acl_shortcode_lot_fields {
+    background: #fff;
+    border-radius: 0.8rem;
     display: grid;
-    gap: 0.9rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin: 0;
+    max-width: 42rem;
+    padding: 0.5rem 1.25rem;
 }
 
-.acl_shortcode_lot_context_card,
-.acl_shortcode_lot_request,
-.acl_shortcode_lot_history {
-    background: var(--ui-panel, #fff);
-    border: 1px solid var(--ui-line, #e6eaf0);
-    border-radius: 12px;
+.acl_shortcode_lot_field {
+    align-items: baseline;
+    border-bottom: 1px solid var(--lot-line);
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1.2fr);
+    padding: 0.75rem 0;
+}
+
+.acl_shortcode_lot_field:last-child {
+    border-bottom: 0;
+}
+
+.acl_shortcode_lot_field dt,
+.acl_shortcode_lot_request_fields dt {
+    color: var(--lot-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.acl_shortcode_lot_field dd,
+.acl_shortcode_lot_request_fields dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.acl_shortcode_lot_field--total dd {
+    color: var(--lot-ink);
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.acl_shortcode_lot_field code,
+.acl_shortcode_lot_request_fields code {
+    color: inherit;
+    white-space: normal;
+}
+
+.acl_shortcode_lot_value_grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.acl_shortcode_lot_value_card {
+    background: #fff;
+    border: 1px solid var(--lot-line);
+    border-radius: 0.85rem;
+    box-shadow: 0 10px 24px rgba(35, 31, 26, 0.06);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.acl_shortcode_lot_value_media {
+    background: var(--lot-section);
+}
+
+.acl_shortcode_lot_value_media img {
+    aspect-ratio: 4 / 3;
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.acl_shortcode_lot_value_content {
     padding: 1rem;
 }
 
-.acl_shortcode_lot_context_card h3,
-.acl_shortcode_lot_request h3,
-.acl_shortcode_lot_history h3 {
-    font-size: 1rem;
-    margin: 0 0 0.65rem;
+.acl_shortcode_lot_value_icon {
+    background: var(--lot-accent);
+    border-radius: 0.35rem;
+    display: block;
+    height: 1.4rem;
+    margin-bottom: 0.7rem;
+    width: 1.4rem;
 }
 
-.acl_shortcode_lot_context_card p,
-.acl_shortcode_lot_timeline_content p {
+.acl_shortcode_lot_value_content h3 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
+}
+
+.acl_shortcode_lot_value_content p {
     margin: 0;
 }
 
-.acl_shortcode_lot_context_meta,
+.acl_shortcode_lot_value_meta,
 .acl_shortcode_lot_timeline_date {
-    color: var(--ui-muted, #5e6776);
-    font-size: 0.85rem;
-    margin-top: 0.35rem !important;
+    color: var(--lot-muted);
+    font-size: 0.82rem;
+    margin-top: 0.3rem !important;
+}
+
+.acl_shortcode_lot_tracking {
+    background: var(--lot-section);
+    display: grid;
+    gap: 1rem;
+}
+
+.acl_shortcode_lot_tracking > .acl_shortcode_lot_section_title {
+    margin-bottom: 0.25rem;
+}
+
+.acl_shortcode_lot_request,
+.acl_shortcode_lot_history {
+    background: #fff;
+    border: 1px solid var(--lot-line);
+    border-radius: 0.85rem;
+    padding: 1.25rem;
 }
 
 .acl_shortcode_lot_request_fields {
     display: grid;
-    gap: 0.75rem;
+    gap: 1rem;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
     margin: 0;
 }
@@ -183,22 +284,13 @@
     min-width: 0;
 }
 
-.acl_shortcode_lot_request_fields dt {
-    color: var(--ui-muted, #5e6776);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
 .acl_shortcode_lot_request_fields dd {
-    margin: 0.35rem 0 0;
-    overflow-wrap: anywhere;
+    margin-top: 0.35rem;
 }
 
-.acl_shortcode_lot_request_fields code {
-    color: inherit;
-    white-space: normal;
+.acl_shortcode_lot_history h3 {
+    font-size: 1rem;
+    margin: 0 0 1rem;
 }
 
 .acl_shortcode_lot_timeline {
@@ -219,7 +311,7 @@
 }
 
 .acl_shortcode_lot_timeline_item:not(:last-child)::before {
-    background: var(--ui-line, #e6eaf0);
+    background: #e3c4aa;
     content: "";
     inset-block: 0.7rem 0;
     left: 0.34rem;
@@ -228,15 +320,19 @@
 }
 
 .acl_shortcode_lot_timeline_marker {
-    background: var(--ui-accent, #1f3f73);
-    border: 2px solid var(--ui-panel, #fff);
+    background: var(--lot-accent);
+    border: 2px solid #fff;
     border-radius: 50%;
-    box-shadow: 0 0 0 1px var(--ui-accent, #1f3f73);
+    box-shadow: 0 0 0 1px var(--lot-accent);
     height: 0.7rem;
     margin-top: 0.3rem;
     position: relative;
     width: 0.7rem;
     z-index: 1;
+}
+
+.acl_shortcode_lot_timeline_content p {
+    margin: 0;
 }
 
 .acl_shortcode_lot_timeline_transition {
@@ -246,9 +342,44 @@
     gap: 0.4rem;
 }
 
-@media (max-width: 600px) {
-    .acl_shortcode_lot_fields,
-    .acl_shortcode_lot_context {
+.acl_shortcode_lot_signature {
+    background: #242321;
+    color: #fff;
+    display: grid;
+    gap: 0.5rem;
+    padding: 1.25rem clamp(1.5rem, 4vw, 3rem);
+}
+
+.acl_shortcode_lot_signature strong {
+    color: #d5d2cc;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.acl_shortcode_lot_signature code {
+    color: #fff;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+@media (max-width: 760px) {
+    .acl_shortcode_lot_hero {
+        grid-template-columns: 1fr;
+    }
+
+    .acl_shortcode_lot_hero_media {
+        grid-row: 1;
+    }
+
+    .acl_shortcode_lot_value_grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .acl_shortcode_lot_field {
+        gap: 0.3rem;
         grid-template-columns: 1fr;
     }
 }

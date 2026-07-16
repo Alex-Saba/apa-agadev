@@ -100,6 +100,11 @@ Ces informations sont lues depuis le payload public synchronise. La fiche
 n'affiche ni email, ni telephone, ni permission, ni metadata privee, ni piece
 jointe, ni identifiant numerique interne.
 
+Les quatre illustrations de la fiche (produit, zone de collecte, collecteur et
+reclamant) sont choisies lot par lot dans la mediatheque WordPress depuis le
+menu `Lots APA`. Elles restent stockees dans WordPress et ne sont pas remplacees
+par une synchronisation Maivou.
+
 Le CPT ne possede aucune archive publique et reste exclu de la recherche WordPress. Il n'existe pas de page de liste publique des lots.
 
 ### Compatibilite des QR existants
