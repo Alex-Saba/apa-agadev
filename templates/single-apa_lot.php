@@ -147,7 +147,7 @@ while (have_posts()) :
                         <?php endif; ?>
                         <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Code', 'plugin-apa-agadev'); ?></dt><dd><code><?php echo esc_html($lot_code); ?></code></dd></div>
                         <?php if ([] !== $packaging_parts) : ?>
-                            <div class="acl_shortcode_lot_field acl_shortcode_lot_field--packaging"><dt><?php esc_html_e('Conditionnement', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html(implode(' · ', $packaging_parts)); ?></dd></div>
+                            <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Conditionnement', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html(implode(' · ', $packaging_parts)); ?></dd></div>
                         <?php endif; ?>
                         <?php if (isset($payload['package_count'])) : ?>
                             <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Nombre d’unités', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html((string) $payload['package_count']); ?></dd></div>

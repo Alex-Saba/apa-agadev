@@ -185,20 +185,6 @@
     border-bottom: 0;
 }
 
-.acl_shortcode_lot_field--packaging dt {
-    align-items: center;
-    display: flex;
-    gap: 0.45rem;
-}
-
-.acl_shortcode_lot_field--packaging dt::before {
-    background: url("images/lot-icons/logistics.png") center / contain no-repeat;
-    content: "";
-    flex: 0 0 1.4rem;
-    height: 1.4rem;
-    width: 1.4rem;
-}
-
 .acl_shortcode_lot_field dt,
 .acl_shortcode_lot_request_fields dt {
     color: var(--lot-muted);
@@ -208,19 +194,25 @@
 
 .acl_shortcode_lot_field dd,
 .acl_shortcode_lot_request_fields dd {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.4;
     margin: 0;
     overflow-wrap: anywhere;
 }
 
 .acl_shortcode_lot_field--total dd {
     color: var(--lot-ink);
-    font-size: 1.2rem;
     font-weight: 800;
 }
 
 .acl_shortcode_lot_field code,
 .acl_shortcode_lot_request_fields code {
     color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
     white-space: normal;
 }
 
