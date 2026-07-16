@@ -214,10 +214,8 @@ pour le champ concerne.
 == Changelog ==
 
 = 2026.7.11 =
-* Integration du formulaire APA dans la section des agrements de l'espace utilisateur.
-* Remplacement des cartes par une table responsive et un etat vide explicite.
-* Ajout d'une modale accessible et d'un parcours de formulaire multi-etapes.
-* Conservation du formulaire autonome et prevention des doubles soumissions.
+* Retour au fonctionnement precedent des shortcodes de formulaire et de liste des agrements.
+* Conservation de la version 2026.7.11 pour assurer la continuite des mises a jour.
 
 = 2026.7.10 =
 * Suppression du pictogramme affiche devant le conditionnement.
