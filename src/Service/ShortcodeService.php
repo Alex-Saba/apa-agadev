@@ -33,23 +33,44 @@ final class ShortcodeService
     public function renderAgreementForm(array $attributes = []): string
     {
         $attributes = shortcode_atts(['role' => ''], $attributes, 'apa_agadev_form');
-        $response = $this->data->getAgreementForm((string) $attributes['role']);
+        $form = $this->buildAgreementForm((string) $attributes['role'], false);
+
+        return $form['html'];
+    }
+
+    /**
+     * Builds the shared form used standalone or inside the agreements modal.
+     *
+     * @return array{html:string,submission_success:bool,open_modal:bool}
+     */
+    private function buildAgreementForm(string $role, bool $embedded): array
+    {
+        $submission_context = $embedded ? 'agreements' : 'standalone';
+        $response = $this->data->getAgreementForm($role);
 
         if (! $response['ok']) {
-            return $this->renderError($response);
+            return [
+                'html' => $this->renderError($response),
+                'submission_success' => false,
+                'open_modal' => false,
+            ];
         }
 
         $catalog = is_array($response['data']) ? $response['data'] : [];
         $options_response = $this->data->getAgreementOptions($catalog);
 
         if (! $options_response['ok']) {
-            return $this->renderError($options_response);
+            return [
+                'html' => $this->renderError($options_response),
+                'submission_success' => false,
+                'open_modal' => false,
+            ];
         }
 
         $submitted = [];
         $submission = null;
 
-        if ($this->isAgreementSubmission()) {
+        if ($this->isAgreementSubmission($submission_context)) {
             $submitted = $this->submittedAgreement();
 
             if (! $this->hasValidNonce()) {
@@ -68,12 +89,19 @@ final class ShortcodeService
             }
         }
 
-        return $this->renderTemplate('agreement-form', [
-            'catalog' => $catalog,
-            'remote_options' => is_array($options_response['data']) ? $options_response['data'] : [],
-            'submitted' => $submitted,
-            'submission' => $submission,
-        ]);
+        return [
+            'html' => $this->renderTemplate('agreement-form', [
+                'catalog' => $catalog,
+                'remote_options' => is_array($options_response['data']) ? $options_response['data'] : [],
+                'submitted' => $submitted,
+                'submission' => $submission,
+                'embedded' => $embedded,
+                'show_submission_success' => ! $embedded,
+                'submission_context' => $submission_context,
+            ]),
+            'submission_success' => is_array($submission) && ! empty($submission['ok']),
+            'open_modal' => is_array($submission) && empty($submission['ok']),
+        ];
     }
 
     /**
@@ -81,6 +109,8 @@ final class ShortcodeService
      */
     public function renderAgreements(): string
     {
+        // Process a modal submission first so the refreshed table includes it.
+        $form = $this->buildAgreementForm('', true);
         $response = $this->data->getAgreements();
 
         if (! $response['ok']) {
@@ -89,17 +119,21 @@ final class ShortcodeService
 
         return $this->renderTemplate('agreements', [
             'agreements' => is_array($response['data']) ? $response['data'] : [],
+            'form_html' => $form['html'],
+            'submission_success' => $form['submission_success'],
+            'open_modal' => $form['open_modal'],
         ]);
     }
 
     /**
      * Identifies only submissions owned by this shortcode.
      */
-    private function isAgreementSubmission(): bool
+    private function isAgreementSubmission(string $context): bool
     {
-        return isset($_SERVER['REQUEST_METHOD'], $_POST['apa_agadev_action'])
+        return isset($_SERVER['REQUEST_METHOD'], $_POST['apa_agadev_action'], $_POST['apa_agadev_context'])
             && 'POST' === strtoupper(sanitize_text_field(wp_unslash((string) $_SERVER['REQUEST_METHOD'])))
-            && 'create_agreement' === sanitize_key(wp_unslash((string) $_POST['apa_agadev_action']));
+            && 'create_agreement' === sanitize_key(wp_unslash((string) $_POST['apa_agadev_action']))
+            && $context === sanitize_key(wp_unslash((string) $_POST['apa_agadev_context']));
     }
 
     /**
@@ -330,7 +364,7 @@ final class ShortcodeService
 
         wp_enqueue_style('plugin-apa-agadev');
 
-        if ('agreement-form' === $template) {
+        if (in_array($template, ['agreement-form', 'agreements'], true)) {
             wp_enqueue_script('plugin-apa-agadev');
         }
         extract($variables, EXTR_SKIP);

@@ -6,6 +6,9 @@
  * @var array<string, mixed> $remote_options
  * @var array<string, mixed> $submitted
  * @var array<string, mixed>|null $submission
+ * @var bool $embedded
+ * @var bool $show_submission_success
+ * @var string $submission_context
  */
 
 if (! defined('ABSPATH')) {
@@ -13,6 +16,15 @@ if (! defined('ABSPATH')) {
 }
 
 $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
+$embedded = isset($embedded) && true === $embedded;
+$show_submission_success = ! isset($show_submission_success) || true === $show_submission_success;
+$submission_context = isset($submission_context) ? sanitize_key((string) $submission_context) : 'standalone';
+$form_instance = wp_unique_id('apa-agadev-form-');
+$section_count = count(array_filter(
+    $sections,
+    static fn ($section, $key): bool => is_string($key) && is_array($section),
+    ARRAY_FILTER_USE_BOTH
+));
 
 $is_list = static function (array $value): bool {
     return $value !== [] && array_keys($value) === range(0, count($value) - 1);
@@ -53,11 +65,11 @@ $render_input = static function (
     string $key,
     array $field,
     $value
-) use ($field_options): void {
+) use ($field_options, $form_instance): void {
     $type = (string) ($field['type'] ?? 'text');
     $label = (string) ($field['label'] ?? $key);
     $required = ! empty($field['required']);
-    $id = 'apa-' . substr(md5($name), 0, 12);
+    $id = $form_instance . substr(md5($name), 0, 12);
     $options = $field_options($field);
     ?>
     <div class="acl_shortcode_field acl_shortcode_div">
@@ -181,9 +193,9 @@ $render_benefits = static function (
 };
 ?>
 
-<main class="acl_shortcode_page acl_shortcode_main">
+<div class="acl_shortcode_page acl_shortcode_apa_form_shell<?php echo $embedded ? ' acl_shortcode_apa_form_shell--embedded' : ''; ?>" data-apa-form-root>
 <article class="acl_shortcode_form acl_shortcode_article acl_shortcode_apa_form">
-    <?php if (is_array($submission) && ! empty($submission['ok'])) : ?>
+    <?php if ($show_submission_success && is_array($submission) && ! empty($submission['ok'])) : ?>
         <div class="acl_shortcode_notice acl_shortcode_notice--success acl_shortcode_div" role="status">
             <?php esc_html_e('Votre demande APA a bien été transmise à Maivou.', 'plugin-apa-agadev'); ?>
         </div>
@@ -204,10 +216,12 @@ $render_benefits = static function (
     <?php if ($sections === []) : ?>
         <div class="acl_shortcode_empty acl_shortcode_div"><?php esc_html_e('Aucun formulaire APA disponible.', 'plugin-apa-agadev'); ?></div>
     <?php else : ?>
-        <form method="post" class="acl_shortcode_sections acl_shortcode_div">
+        <form method="post" class="acl_shortcode_sections acl_shortcode_div" data-apa-step-form>
             <?php wp_nonce_field('apa_agadev_create_agreement', 'apa_agadev_nonce'); ?>
             <input type="hidden" name="apa_agadev_action" value="create_agreement">
+            <input type="hidden" name="apa_agadev_context" value="<?php echo esc_attr($submission_context); ?>">
 
+            <?php $section_index = 0; ?>
             <?php foreach ($sections as $section_key => $section) : ?>
                 <?php
                 if (! is_string($section_key) || ! is_array($section)) {
@@ -216,9 +230,18 @@ $render_benefits = static function (
 
                 $section_values = is_array($submitted[$section_key] ?? null) ? $submitted[$section_key] : [];
                 ?>
-                <section class="acl_shortcode_section">
+                <?php
+                $is_first_section = 0 === $section_index;
+                $is_last_section = $section_index === $section_count - 1;
+                ?>
+                <section class="acl_shortcode_section acl_shortcode_apa_step" data-apa-step data-apa-step-index="<?php echo esc_attr((string) $section_index); ?>"<?php echo $is_first_section ? '' : ' hidden'; ?>>
+                    <div class="acl_shortcode_apa_step_heading acl_shortcode_div">
+                        <p class="acl_shortcode_apa_step_count acl_shortcode_p">
+                            <?php echo esc_html(sprintf(__('Étape %1$d sur %2$d', 'plugin-apa-agadev'), $section_index + 1, $section_count)); ?>
+                        </p>
                     <h2 class="acl_shortcode_title acl_shortcode_h2"><?php echo esc_html((string) ($section['title'] ?? $section_key)); ?></h2>
                     <?php if (! empty($section['description'])) : ?><div class="acl_shortcode_subtitle acl_shortcode_div"><?php echo esc_html((string) $section['description']); ?></div><?php endif; ?>
+                    </div>
 
                     <?php $render_fields(is_array($section['fields'] ?? null) ? $section['fields'] : [], 'agreement[' . $section_key . ']', $section_values); ?>
 
@@ -233,13 +256,21 @@ $render_benefits = static function (
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                </section>
-            <?php endforeach; ?>
 
-            <div class="acl_shortcode_actions acl_shortcode_div">
-                <button type="submit" class="acl_shortcode_submit acl_shortcode_button_submit"><?php esc_html_e('Envoyer la demande APA', 'plugin-apa-agadev'); ?></button>
-            </div>
+                    <div class="acl_shortcode_actions acl_shortcode_apa_step_actions acl_shortcode_div">
+                        <?php if (! $is_first_section) : ?>
+                            <button type="button" class="acl_shortcode_btn acl_shortcode_button_button" data-apa-step-previous><?php esc_html_e('Retour', 'plugin-apa-agadev'); ?></button>
+                        <?php endif; ?>
+                        <?php if ($is_last_section) : ?>
+                            <button type="submit" class="acl_shortcode_submit acl_shortcode_button_submit"><?php esc_html_e('Envoyer la demande APA', 'plugin-apa-agadev'); ?></button>
+                        <?php else : ?>
+                            <button type="button" class="acl_shortcode_submit acl_shortcode_button_submit" data-apa-step-next><?php esc_html_e('Continuer', 'plugin-apa-agadev'); ?></button>
+                        <?php endif; ?>
+                    </div>
+                </section>
+                <?php $section_index++; ?>
+            <?php endforeach; ?>
         </form>
     <?php endif; ?>
 </article>
-</main>
+</div>
