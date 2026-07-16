@@ -125,8 +125,130 @@
     white-space: normal;
 }
 
+.acl_shortcode_lot_traceability {
+    border-top: 1px solid var(--ui-line, #e6eaf0);
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+}
+
+.acl_shortcode_lot_section_title {
+    font-size: 1.25rem;
+    margin: 0 0 0.15rem;
+}
+
+.acl_shortcode_lot_context {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.acl_shortcode_lot_context_card,
+.acl_shortcode_lot_request,
+.acl_shortcode_lot_history {
+    background: var(--ui-panel, #fff);
+    border: 1px solid var(--ui-line, #e6eaf0);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.acl_shortcode_lot_context_card h3,
+.acl_shortcode_lot_request h3,
+.acl_shortcode_lot_history h3 {
+    font-size: 1rem;
+    margin: 0 0 0.65rem;
+}
+
+.acl_shortcode_lot_context_card p,
+.acl_shortcode_lot_timeline_content p {
+    margin: 0;
+}
+
+.acl_shortcode_lot_context_meta,
+.acl_shortcode_lot_timeline_date {
+    color: var(--ui-muted, #5e6776);
+    font-size: 0.85rem;
+    margin-top: 0.35rem !important;
+}
+
+.acl_shortcode_lot_request_fields {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    margin: 0;
+}
+
+.acl_shortcode_lot_request_fields > div {
+    min-width: 0;
+}
+
+.acl_shortcode_lot_request_fields dt {
+    color: var(--ui-muted, #5e6776);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.acl_shortcode_lot_request_fields dd {
+    margin: 0.35rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.acl_shortcode_lot_request_fields code {
+    color: inherit;
+    white-space: normal;
+}
+
+.acl_shortcode_lot_timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.acl_shortcode_lot_timeline_item {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: 0.75rem minmax(0, 1fr);
+    position: relative;
+}
+
+.acl_shortcode_lot_timeline_item:not(:last-child) {
+    padding-bottom: 1rem;
+}
+
+.acl_shortcode_lot_timeline_item:not(:last-child)::before {
+    background: var(--ui-line, #e6eaf0);
+    content: "";
+    inset-block: 0.7rem 0;
+    left: 0.34rem;
+    position: absolute;
+    width: 1px;
+}
+
+.acl_shortcode_lot_timeline_marker {
+    background: var(--ui-accent, #1f3f73);
+    border: 2px solid var(--ui-panel, #fff);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--ui-accent, #1f3f73);
+    height: 0.7rem;
+    margin-top: 0.3rem;
+    position: relative;
+    width: 0.7rem;
+    z-index: 1;
+}
+
+.acl_shortcode_lot_timeline_transition {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
 @media (max-width: 600px) {
-    .acl_shortcode_lot_fields {
+    .acl_shortcode_lot_fields,
+    .acl_shortcode_lot_context {
         grid-template-columns: 1fr;
     }
 }
