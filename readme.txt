@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.6
+Stable tag: 2026.7.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -111,7 +111,11 @@ Chaque lot synchronise est publie sous l'URL canonique :
 
 La fiche affiche le code, le statut traduit (`Vendu` ou `Annule`), le produit,
 la quantite, le conditionnement, la province, le departement et la signature
-lorsqu'elle est disponible.
+lorsqu'elle est disponible. Elle restitue egalement le collecteur, le reclamant,
+la date de claim, la request associee, son statut et son historique public.
+
+Les emails, telephones, permissions, metadata privees, pieces jointes et
+identifiants numeriques internes ne sont jamais affiches sur cette fiche.
 
 Le CPT est exclu de la recherche WordPress et ne possede aucune archive publique.
 
@@ -204,6 +208,11 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.7 =
+* Ajout du collecteur et du reclamant sur la fiche publique du lot.
+* Ajout de la request de claim, de son statut et de son historique public.
+* Ajout d'une chronologie responsive sans exposition des donnees privees.
 
 = 2026.7.6 =
 * Amelioration verticale et responsive de la fiche publique d'un lot.

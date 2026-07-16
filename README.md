@@ -90,7 +90,15 @@ La fiche affiche :
 - le conditionnement ;
 - la province ;
 - le departement ;
-- la signature lorsqu'elle est disponible.
+- la signature lorsqu'elle est disponible ;
+- le nom du collecteur ;
+- le nom du reclamant et la date de claim ;
+- la request de claim associee et son statut ;
+- la chronologie publique des changements de statut de la request.
+
+Ces informations sont lues depuis le payload public synchronise. La fiche
+n'affiche ni email, ni telephone, ni permission, ni metadata privee, ni piece
+jointe, ni identifiant numerique interne.
 
 Le CPT ne possede aucune archive publique et reste exclu de la recherche WordPress. Il n'existe pas de page de liste publique des lots.
 
@@ -186,4 +194,3 @@ composer validate
 find . -name '*.php' -not -path './vendor/*' -exec php -l {} \;
 git diff --check
 ```
-
