@@ -131,14 +131,14 @@ while (have_posts()) :
                 </header>
 
                 <section class="acl_shortcode_lot_section acl_shortcode_lot_summary acl_shortcode_div">
-                    <h2 class="acl_shortcode_lot_section_title acl_shortcode_h2"><?php esc_html_e('Informations du lot', 'plugin-apa-agadev'); ?></h2>
+                    <h2 class="acl_shortcode_lot_section_title acl_shortcode_lot_section_title--lot acl_shortcode_h2"><?php esc_html_e('Informations du lot', 'plugin-apa-agadev'); ?></h2>
                     <dl class="acl_shortcode_lot_fields">
                         <?php if ('' !== $product_name) : ?>
                             <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Nom du produit', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html($product_name); ?></dd></div>
                         <?php endif; ?>
                         <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Code', 'plugin-apa-agadev'); ?></dt><dd><code><?php echo esc_html($lot_code); ?></code></dd></div>
                         <?php if ([] !== $packaging_parts) : ?>
-                            <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Conditionnement', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html(implode(' · ', $packaging_parts)); ?></dd></div>
+                            <div class="acl_shortcode_lot_field acl_shortcode_lot_field--packaging"><dt><?php esc_html_e('Conditionnement', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html(implode(' · ', $packaging_parts)); ?></dd></div>
                         <?php endif; ?>
                         <?php if (isset($payload['package_count'])) : ?>
                             <div class="acl_shortcode_lot_field"><dt><?php esc_html_e('Nombre d’unités', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html((string) $payload['package_count']); ?></dd></div>
@@ -151,13 +151,13 @@ while (have_posts()) :
 
                 <?php if ($has_value_chain) : ?>
                     <section class="acl_shortcode_lot_section acl_shortcode_lot_value_chain acl_shortcode_div">
-                        <h2 class="acl_shortcode_lot_section_title acl_shortcode_h2"><?php esc_html_e('Chaîne de valeurs', 'plugin-apa-agadev'); ?></h2>
+                        <h2 class="acl_shortcode_lot_section_title acl_shortcode_lot_section_title--value-chain acl_shortcode_h2"><?php esc_html_e('Chaîne de valeurs', 'plugin-apa-agadev'); ?></h2>
                         <div class="acl_shortcode_lot_value_grid acl_shortcode_div">
                             <?php if ($has_zone) : ?>
                                 <article class="acl_shortcode_lot_value_card acl_shortcode_div">
                                     <?php if ($zone_image_id > 0) : ?><div class="acl_shortcode_lot_value_media"><?php echo wp_kses_post(wp_get_attachment_image($zone_image_id, 'medium_large')); ?></div><?php endif; ?>
                                     <div class="acl_shortcode_lot_value_content acl_shortcode_div">
-                                        <span class="acl_shortcode_lot_value_icon" aria-hidden="true"></span>
+                                        <span class="acl_shortcode_lot_value_icon acl_shortcode_lot_value_icon--zone" aria-hidden="true"></span>
                                         <h3 class="acl_shortcode_h3"><?php esc_html_e('Zone de collecte', 'plugin-apa-agadev'); ?></h3>
                                         <?php if (! empty($zone['province_name'])) : ?><p><?php echo esc_html((string) $zone['province_name']); ?></p><?php endif; ?>
                                         <?php if (! empty($zone['department_name'])) : ?><p class="acl_shortcode_lot_value_meta"><?php echo esc_html((string) $zone['department_name']); ?></p><?php endif; ?>
@@ -168,7 +168,7 @@ while (have_posts()) :
                                 <article class="acl_shortcode_lot_value_card acl_shortcode_div">
                                     <?php if ($collector_image_id > 0) : ?><div class="acl_shortcode_lot_value_media"><?php echo wp_kses_post(wp_get_attachment_image($collector_image_id, 'medium_large')); ?></div><?php endif; ?>
                                     <div class="acl_shortcode_lot_value_content acl_shortcode_div">
-                                        <span class="acl_shortcode_lot_value_icon" aria-hidden="true"></span>
+                                        <span class="acl_shortcode_lot_value_icon acl_shortcode_lot_value_icon--collector" aria-hidden="true"></span>
                                         <h3 class="acl_shortcode_h3"><?php esc_html_e('Collecteur', 'plugin-apa-agadev'); ?></h3>
                                         <?php if ('' !== $collector_name) : ?><p><?php echo esc_html($collector_name); ?></p><?php endif; ?>
                                     </div>
@@ -178,7 +178,7 @@ while (have_posts()) :
                                 <article class="acl_shortcode_lot_value_card acl_shortcode_div">
                                     <?php if ($claimant_image_id > 0) : ?><div class="acl_shortcode_lot_value_media"><?php echo wp_kses_post(wp_get_attachment_image($claimant_image_id, 'medium_large')); ?></div><?php endif; ?>
                                     <div class="acl_shortcode_lot_value_content acl_shortcode_div">
-                                        <span class="acl_shortcode_lot_value_icon" aria-hidden="true"></span>
+                                        <span class="acl_shortcode_lot_value_icon acl_shortcode_lot_value_icon--claimant" aria-hidden="true"></span>
                                         <h3 class="acl_shortcode_h3"><?php esc_html_e('Transformateur / Réclamant', 'plugin-apa-agadev'); ?></h3>
                                         <?php if ('' !== $claimant_name) : ?><p><?php echo esc_html($claimant_name); ?></p><?php endif; ?>
                                         <?php if ('' !== $claimed_at_label) : ?><p class="acl_shortcode_lot_value_meta"><?php echo esc_html(sprintf(__('Réclamé le %s', 'plugin-apa-agadev'), $claimed_at_label)); ?></p><?php endif; ?>
