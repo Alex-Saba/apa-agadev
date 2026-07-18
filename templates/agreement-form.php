@@ -72,7 +72,7 @@ $render_input = static function (
     ?>
     <div class="acl_shortcode_field acl_shortcode_apa_field <?php echo esc_attr($width_class); ?> acl_shortcode_div">
         <?php if ('checkbox' !== $type) : ?>
-            <label class="acl_shortcode_label" for="<?php echo esc_attr($id); ?>">
+            <label class="acl_shortcode_label"<?php if ('multiselect' === $type) : ?> id="<?php echo esc_attr($id); ?>-label"<?php else : ?> for="<?php echo esc_attr($id); ?>"<?php endif; ?>>
                 <?php echo esc_html($label); ?>
                 <?php if ($required) : ?><span class="acl_shortcode_required acl_shortcode_span" aria-hidden="true"> *</span><?php endif; ?>
             </label>
@@ -81,14 +81,25 @@ $render_input = static function (
         <div class="acl_shortcode_control acl_shortcode_div">
         <?php if ('textarea' === $type) : ?>
             <textarea class="acl_shortcode_textarea" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo $required ? ' required' : ''; ?>><?php echo esc_textarea((string) $value); ?></textarea>
-        <?php elseif ('select' === $type || 'multiselect' === $type) : ?>
+        <?php elseif ('select' === $type) : ?>
             <?php $selected_values = is_array($value) ? array_map('strval', $value) : [(string) $value]; ?>
-            <select class="acl_shortcode_select" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name . ('multiselect' === $type ? '[]' : '')); ?>"<?php echo 'multiselect' === $type ? ' multiple' : ''; ?><?php echo $required ? ' required' : ''; ?>>
-                <?php if ('select' === $type) : ?><option class="acl_shortcode_option" value=""><?php esc_html_e('Sélectionner', 'plugin-apa-agadev'); ?></option><?php endif; ?>
+            <select class="acl_shortcode_select" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo $required ? ' required' : ''; ?>>
+                <option class="acl_shortcode_option" value=""><?php esc_html_e('Sélectionner', 'plugin-apa-agadev'); ?></option>
                 <?php foreach ($options as $option_value => $option_label) : ?>
                     <option class="acl_shortcode_option" value="<?php echo esc_attr((string) $option_value); ?>"<?php echo in_array((string) $option_value, $selected_values, true) ? ' selected' : ''; ?>><?php echo esc_html((string) $option_label); ?></option>
                 <?php endforeach; ?>
             </select>
+        <?php elseif ('multiselect' === $type) : ?>
+            <?php $selected_values = is_array($value) ? array_map('strval', $value) : [(string) $value]; ?>
+            <div class="acl_shortcode_apa_choices acl_shortcode_div" role="group" aria-labelledby="<?php echo esc_attr($id); ?>-label"<?php echo $required ? ' aria-required="true"' : ''; ?>>
+                <?php foreach ($options as $option_value => $option_label) : ?>
+                    <?php $option_id = $id . '-' . substr(md5((string) $option_value), 0, 8); ?>
+                    <label class="acl_shortcode_apa_choice" for="<?php echo esc_attr($option_id); ?>">
+                        <input class="acl_shortcode_input_checkbox" id="<?php echo esc_attr($option_id); ?>" type="checkbox" name="<?php echo esc_attr($name . '[]'); ?>" value="<?php echo esc_attr((string) $option_value); ?>"<?php checked(in_array((string) $option_value, $selected_values, true)); ?>>
+                        <span><?php echo esc_html((string) $option_label); ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
         <?php elseif ('radio' === $type) : ?>
             <fieldset>
                 <legend class="screen-reader-text"><?php echo esc_html($label); ?></legend>

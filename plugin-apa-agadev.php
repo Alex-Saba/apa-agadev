@@ -3,7 +3,7 @@
  * Plugin Name: APA Agadev
  * Plugin URI: https://agadev.com
  * Description: Plugin WordPress APA Agadev.
- * Version: 2026.7.12
+ * Version: 2026.7.13
  * Author: ACL
  * Author URI: https://agadev.com
  * Text Domain: plugin-apa-agadev
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('PLUGIN_APA_AGADEV_VERSION', '2026.7.12');
+define('PLUGIN_APA_AGADEV_VERSION', '2026.7.13');
 define('PLUGIN_APA_AGADEV_FILE', __FILE__);
 define('PLUGIN_APA_AGADEV_PATH', plugin_dir_path(__FILE__));
 define('PLUGIN_APA_AGADEV_URL', plugin_dir_url(__FILE__));
