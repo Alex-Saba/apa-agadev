@@ -31,6 +31,384 @@
     min-height: 8rem;
 }
 
+.acl_shortcode_apa_portal {
+    align-items: start;
+    background: #fff;
+    box-sizing: border-box;
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr);
+    margin-inline: auto;
+    max-width: 72rem;
+    padding: clamp(1rem, 4vw, 3rem);
+    width: 100%;
+}
+
+.acl_shortcode_apa_sidebar {
+    min-width: 0;
+}
+
+.acl_shortcode_apa_intro {
+    background: #efffe5;
+    border-radius: 1.5rem;
+    color: #111;
+    padding: clamp(1.5rem, 3vw, 2rem);
+}
+
+.acl_shortcode_apa_intro .acl_shortcode_title,
+.acl_shortcode_apa_intro .acl_shortcode_h2,
+.acl_shortcode_apa_intro .acl_shortcode_p {
+    color: inherit;
+    margin: 0;
+}
+
+.acl_shortcode_apa_intro .acl_shortcode_title {
+    font-size: clamp(1.7rem, 3vw, 2.25rem);
+    line-height: 1.05;
+}
+
+.acl_shortcode_apa_intro .acl_shortcode_h2 {
+    font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+    line-height: 1.12;
+    margin-top: 0.35rem;
+}
+
+.acl_shortcode_apa_intro .acl_shortcode_p {
+    font-size: 0.9rem;
+    line-height: 1.3;
+    margin-top: 1.25rem;
+}
+
+.acl_shortcode_apa_progress {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0 0 0 0.25rem;
+}
+
+.acl_shortcode_apa_progress_item {
+    align-items: center;
+    color: #969a98;
+    display: grid;
+    font-size: 0.82rem;
+    font-weight: 700;
+    gap: 0.75rem;
+    grid-template-columns: 1.9rem minmax(0, 1fr);
+    min-height: 2.75rem;
+    position: relative;
+}
+
+.acl_shortcode_apa_progress_item:not(:last-child)::after {
+    background: #d4d6d5;
+    content: "";
+    height: calc(100% - 1.9rem);
+    left: 0.92rem;
+    position: absolute;
+    top: 2.32rem;
+    width: 2px;
+}
+
+.acl_shortcode_apa_progress_number {
+    align-items: center;
+    background: #999d9b;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 800;
+    height: 1.9rem;
+    justify-content: center;
+    line-height: 1;
+    position: relative;
+    width: 1.9rem;
+    z-index: 1;
+}
+
+.acl_shortcode_apa_progress_item.is-complete,
+.acl_shortcode_apa_progress_item.is-active {
+    color: #171a18;
+}
+
+.acl_shortcode_apa_progress_item.is-complete .acl_shortcode_apa_progress_number,
+.acl_shortcode_apa_progress_item.is-active .acl_shortcode_apa_progress_number {
+    background: #dc6907;
+}
+
+.acl_shortcode_apa_form {
+    --apa-form-accent: #dc6907;
+    --apa-form-green: #11663a;
+    background: var(--apa-form-green);
+    border: 0;
+    border-radius: 1.1rem;
+    color: #fff;
+    box-sizing: border-box;
+    margin: 0;
+    max-width: none;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    width: 100%;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_title,
+.acl_shortcode_apa_form .acl_shortcode_subtitle,
+.acl_shortcode_apa_form .acl_shortcode_label,
+.acl_shortcode_apa_form legend {
+    color: inherit;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_subtitle {
+    margin-top: 0.45rem;
+    opacity: 0.82;
+}
+
+.acl_shortcode_apa_step[hidden] {
+    display: none !important;
+}
+
+.acl_shortcode_apa_step {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.acl_shortcode_apa_step_heading,
+.acl_shortcode_apa_step_actions,
+.acl_shortcode_apa_step > .acl_shortcode_apa_subsection,
+.acl_shortcode_apa_step > .acl_shortcode_apa_repeater {
+    grid-column: 1 / -1;
+}
+
+.acl_shortcode_apa_step_heading {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.acl_shortcode_apa_step_heading .acl_shortcode_title,
+.acl_shortcode_apa_step_heading .acl_shortcode_subtitle {
+    margin-bottom: 0;
+}
+
+.acl_shortcode_apa_step_heading .acl_shortcode_title {
+    font-size: clamp(1.55rem, 4vw, 2.25rem);
+    line-height: 1.12;
+    margin-top: 0;
+}
+
+.acl_shortcode_apa_step_number {
+    align-items: center;
+    background: var(--apa-form-accent);
+    border-radius: 999px;
+    display: inline-flex;
+    flex: 0 0 2rem;
+    font-size: 1rem;
+    font-weight: 800;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    margin-top: 0.15rem;
+    width: 2rem;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_field {
+    min-width: 0;
+}
+
+.acl_shortcode_apa_field--full {
+    grid-column: 1 / -1;
+}
+
+.acl_shortcode_apa_field--half {
+    grid-column: span 3;
+}
+
+.acl_shortcode_apa_field--third {
+    grid-column: span 2;
+}
+
+.acl_shortcode_apa_field--two-thirds {
+    grid-column: span 4;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_label {
+    display: inline-block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+}
+
+.acl_shortcode_apa_form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.acl_shortcode_apa_form select,
+.acl_shortcode_apa_form textarea {
+    background: #f3f4f3;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 0.45rem;
+    box-sizing: border-box;
+    color: #18251e;
+    min-height: 2.8rem;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+}
+
+.acl_shortcode_apa_form textarea {
+    min-height: 7rem;
+    resize: vertical;
+}
+
+.acl_shortcode_apa_form input:focus,
+.acl_shortcode_apa_form select:focus,
+.acl_shortcode_apa_form textarea:focus {
+    border-color: #ffc28e;
+    box-shadow: 0 0 0 3px rgba(220, 105, 7, 0.28);
+    outline: 0;
+}
+
+.acl_shortcode_apa_form label.acl_shortcode_option {
+    color: #fff;
+}
+
+.acl_shortcode_apa_form option.acl_shortcode_option {
+    color: #18251e;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_control > fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.acl_shortcode_apa_dropzone {
+    align-items: center;
+    border: 3px dashed rgba(255, 255, 255, 0.72);
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    justify-content: center;
+    min-height: 7.5rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+.acl_shortcode_apa_dropzone span {
+    font-size: 0.78rem;
+    opacity: 0.8;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_apa_subsection,
+.acl_shortcode_apa_form .acl_shortcode_apa_repeater,
+.acl_shortcode_apa_form .acl_shortcode_apa_benefit {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_apa_subsection {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.acl_shortcode_apa_form .acl_shortcode_apa_repeater_row,
+.acl_shortcode_apa_form .acl_shortcode_apa_benefit {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.acl_shortcode_apa_form .acl_shortcode_apa_repeater_row > .acl_shortcode_apa_secondary,
+.acl_shortcode_apa_form .acl_shortcode_apa_benefit > h4 {
+    grid-column: 1 / -1;
+}
+
+.acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_title,
+.acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_subtitle,
+.acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_apa_benefit {
+    grid-column: 1 / -1;
+}
+
+.acl_shortcode_apa_step_actions {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-start;
+    margin-top: 0.75rem;
+}
+
+.acl_shortcode_apa_step_actions .acl_shortcode_submit {
+    background: var(--apa-form-accent);
+    border-color: var(--apa-form-accent);
+}
+
+.acl_shortcode_apa_step_actions .acl_shortcode_button_button {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.75);
+    color: #fff;
+}
+
+@media (max-width: 900px) {
+    .acl_shortcode_apa_portal {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .acl_shortcode_apa_progress {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding: 0 0 0.5rem;
+    }
+
+    .acl_shortcode_apa_progress_item {
+        flex: 0 0 min(15rem, 75vw);
+    }
+
+    .acl_shortcode_apa_progress_item::after {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .acl_shortcode_apa_form {
+        border-radius: 0.8rem;
+        padding: 1.25rem;
+    }
+
+    .acl_shortcode_apa_step,
+    .acl_shortcode_apa_form .acl_shortcode_apa_subsection,
+    .acl_shortcode_apa_form .acl_shortcode_apa_repeater_row,
+    .acl_shortcode_apa_form .acl_shortcode_apa_benefit {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .acl_shortcode_apa_step_heading,
+    .acl_shortcode_apa_step_actions,
+    .acl_shortcode_apa_step > .acl_shortcode_apa_subsection,
+    .acl_shortcode_apa_step > .acl_shortcode_apa_repeater,
+    .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_title,
+    .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_subtitle,
+    .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_apa_benefit {
+        grid-column: auto;
+    }
+
+    .acl_shortcode_apa_field--full,
+    .acl_shortcode_apa_field--half,
+    .acl_shortcode_apa_field--third,
+    .acl_shortcode_apa_field--two-thirds,
+    .acl_shortcode_apa_form .acl_shortcode_apa_repeater_row > .acl_shortcode_apa_secondary,
+    .acl_shortcode_apa_form .acl_shortcode_apa_benefit > h4 {
+        grid-column: 1 / -1;
+    }
+
+    .acl_shortcode_apa_step_actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .acl_shortcode_apa_step_actions button {
+        width: 100%;
+    }
+}
+
 .acl_shortcode_lot_detail {
     --lot-accent: #d96b16;
     --lot-accent-soft: #fff2e6;

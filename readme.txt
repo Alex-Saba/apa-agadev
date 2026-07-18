@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.11
+Stable tag: 2026.7.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -212,6 +212,10 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.12 =
+* Nouvelle presentation en deux colonnes du formulaire APA, inspiree de la maquette Maivou.
+* Ajout d'un parcours dynamique entre les etapes du formulaire et adaptation responsive.
 
 = 2026.7.11 =
 * Retour au fonctionnement precedent des shortcodes de formulaire et de liste des agrements.
