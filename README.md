@@ -102,7 +102,7 @@ jointe, ni identifiant numerique interne.
 
 Les quatre illustrations de la fiche (produit, zone de collecte, collecteur et
 reclamant) sont choisies lot par lot dans la mediatheque WordPress depuis le
-menu `Lots APA`. Elles restent stockees dans WordPress et ne sont pas remplacees
+menu `Lots`. Elles restent stockees dans WordPress et ne sont pas remplacees
 par une synchronisation Maivou.
 
 Le CPT ne possede aucune archive publique et reste exclu de la recherche WordPress. Il n'existe pas de page de liste publique des lots.
@@ -169,7 +169,7 @@ Le depot etant public, aucun token GitHub n'est requis par APA Agadev.
 
 ### Fiche de lot introuvable
 
-- Verifier que le lot apparait dans le menu `Lots APA`.
+- Verifier que le lot apparait dans le menu `Lots`.
 - Verifier que son statut Maivou est `sold` ou `cancelled`.
 - Verifier qu'une request lui est associee.
 - Enregistrer de nouveau les permaliens WordPress.

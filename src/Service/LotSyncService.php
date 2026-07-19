@@ -45,8 +45,8 @@ final class LotSyncService
     {
         register_post_type(self::POST_TYPE, [
             'labels' => [
-                'name' => __('Lots APA', 'plugin-apa-agadev'),
-                'singular_name' => __('Lot APA', 'plugin-apa-agadev'),
+                'name' => __('Lots', 'plugin-apa-agadev'),
+                'singular_name' => __('Lot', 'plugin-apa-agadev'),
                 'edit_item' => __('Consulter le lot APA', 'plugin-apa-agadev'),
                 'view_item' => __('Voir le lot APA', 'plugin-apa-agadev'),
                 'search_items' => __('Rechercher un lot APA', 'plugin-apa-agadev'),

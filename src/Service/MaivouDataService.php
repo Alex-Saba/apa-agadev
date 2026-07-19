@@ -34,10 +34,25 @@ final class MaivouDataService
      * Creates an APA agreement for the authenticated Maivou user.
      *
      * @param array<string, mixed> $agreement
+     * @param array<string, array{path:string,filename:string,mime:string}> $files
+     * @param list<array{path:string,multiple:bool}> $documentManifest
      * @return array{ok:bool,status:int,data:mixed,headers:array,set_cookie:array,error:?string}
      */
-    public function createAgreement(array $agreement): array
+    public function createAgreement(array $agreement, array $files = [], array $documentManifest = []): array
     {
+        if ($files !== []) {
+            return $this->call([
+                'endpoint' => '/agreements',
+                'method' => 'POST',
+                'fields' => [
+                    'payload' => wp_json_encode($agreement),
+                    'document_manifest' => wp_json_encode($documentManifest),
+                ],
+                'files' => $files,
+                'auth' => 'user',
+            ]);
+        }
+
         return $this->call([
             'endpoint' => '/agreements',
             'method' => 'POST',

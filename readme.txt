@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.13
+Stable tag: 2026.7.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,8 +81,9 @@ La page `Reglages > APA Agadev` affiche :
 6. Le plugin envoie la demande avec `POST /api/agreements`.
 7. Le resultat Maivou est affiche sans inventer de donnees de remplacement.
 
-Les champs de fichier sont signales comme indisponibles tant que Maivou
-n'expose pas de contrat de televersement pour ces documents.
+Les champs de fichier PDF, JPG et PNG sont transmis de maniere privee a
+Maivou via ACL WordPress API Bridge. WordPress ne conserve aucune copie dans
+sa mediatheque.
 
 = Accords APA (`[apa_agadev_agreements]`) =
 
@@ -110,9 +111,9 @@ Chaque lot synchronise est publie sous l'URL canonique :
 `/lot/{code}/`
 
 La fiche affiche le code, le statut traduit (`Vendu` ou `Annule`), le produit,
-la quantite, le conditionnement, la province, le departement et la signature
-lorsqu'elle est disponible. Elle restitue egalement le collecteur, le reclamant,
-la date de claim, la request associee, son statut et son historique public.
+sa description, la quantite, le conditionnement, la province, le departement,
+le chef-lieu. Elle restitue egalement le collecteur, le reclamant et la date
+de claim.
 
 Les emails, telephones, permissions, metadata privees, pieces jointes et
 identifiants numeriques internes ne sont jamais affiches sur cette fiche.
@@ -213,7 +214,16 @@ pour le champ concerne.
 
 == Changelog ==
 
+= 2026.7.14 =
+* Refonte de l'espace des agrements avec formulaire modal, navigation par sections et synthese avant envoi.
+* Transmission securisee des documents APA PDF, JPG et PNG vers Maivou via ACL WordPress API Bridge.
+* Amelioration responsive du formulaire APA, des champs repetables et des messages de confirmation.
+* Refonte de la fiche publique du lot avec informations produit, illustrations WordPress et chaine de valeurs.
+* Simplification des informations publiques du lot et renommage du menu d'administration en `Lots`.
+
 = 2026.7.13 =
+* Enrichissement de la fiche publique avec la description, le code produit et le chef-lieu.
+* Suppression du suivi et de l'historique de la demande sur la fiche publique.
 * Correction de la largeur et de la grille des groupes de champs repetables.
 * Remplacement des listes multiples natives par des choix lisibles sous forme de cases a cocher.
 * Harmonisation de la typographie des champs et du rendu des boutons du formulaire APA.

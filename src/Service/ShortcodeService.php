@@ -32,7 +32,11 @@ final class ShortcodeService
      */
     public function renderAgreementForm(array $attributes = []): string
     {
-        $attributes = shortcode_atts(['role' => ''], $attributes, 'apa_agadev_form');
+        $attributes = shortcode_atts([
+            'role' => '',
+            'layout' => 'full',
+        ], $attributes, 'apa_agadev_form');
+        $layout = 'modal' === sanitize_key((string) $attributes['layout']) ? 'modal' : 'full';
         $response = $this->data->getAgreementForm((string) $attributes['role']);
 
         if (! $response['ok']) {
@@ -60,7 +64,24 @@ final class ShortcodeService
                 ];
             } else {
                 $payload = $this->normalizeAgreement($submitted, $catalog);
-                $submission = $this->data->createAgreement($payload);
+                $documents = $this->submittedDocuments($catalog);
+
+                if (! $documents['ok']) {
+                    $submission = [
+                        'ok' => false,
+                        'status' => 422,
+                        'data' => null,
+                        'headers' => [],
+                        'set_cookie' => [],
+                        'error' => $documents['error'],
+                    ];
+                } else {
+                    $submission = $this->data->createAgreement(
+                        $payload,
+                        $documents['files'],
+                        $documents['manifest']
+                    );
+                }
 
                 if ($submission['ok']) {
                     $submitted = [];
@@ -73,6 +94,7 @@ final class ShortcodeService
             'remote_options' => is_array($options_response['data']) ? $options_response['data'] : [],
             'submitted' => $submitted,
             'submission' => $submission,
+            'layout' => $layout,
         ]);
     }
 
@@ -81,14 +103,20 @@ final class ShortcodeService
      */
     public function renderAgreements(): string
     {
+        // Process a possible creation first so the refreshed list can include it.
+        $form = $this->renderAgreementForm(['layout' => 'modal']);
         $response = $this->data->getAgreements();
+        $agreements_error = $response['ok'] ? '' : trim((string) ($response['error'] ?? ''));
 
-        if (! $response['ok']) {
-            return $this->renderError($response);
+        if (! $response['ok'] && '' === $agreements_error) {
+            $agreements_error = __('Impossible de récupérer les agréments depuis Maivou.', 'plugin-apa-agadev');
         }
 
         return $this->renderTemplate('agreements', [
-            'agreements' => is_array($response['data']) ? $response['data'] : [],
+            'agreements' => $response['ok'] && is_array($response['data']) ? $response['data'] : [],
+            'agreements_error' => $agreements_error,
+            'form' => $form,
+            'open_modal' => $this->isAgreementSubmission(),
         ]);
     }
 
@@ -124,6 +152,232 @@ final class ShortcodeService
         $agreement = isset($_POST['agreement']) ? wp_unslash($_POST['agreement']) : [];
 
         return is_array($agreement) ? $agreement : [];
+    }
+
+    /**
+     * Validates uploaded documents against the role-filtered catalog and
+     * prepares the flat multipart contract expected by the Bridge.
+     *
+     * @param array<string, mixed> $catalog
+     * @return array{ok:bool,files:array<string,array{path:string,filename:string,mime:string}>,manifest:list<array{path:string,multiple:bool}>,error:string}
+     */
+    private function submittedDocuments(array $catalog): array
+    {
+        $allowed_paths = $this->allowedFilePaths($catalog);
+        $files = [];
+        $manifest = [];
+        $allowed_mimes = [
+            'pdf' => 'application/pdf',
+            'jpg|jpeg|jpe' => 'image/jpeg',
+            'png' => 'image/png',
+        ];
+
+        foreach ($_FILES as $upload_key => $upload) {
+            if (! is_string($upload_key) || ! preg_match('/^apa_agadev_document_(\d+)$/', $upload_key, $matches)) {
+                continue;
+            }
+
+            $index = (int) $matches[1];
+            $path_key = 'apa_agadev_document_path_' . $index;
+            $submitted_path = isset($_POST[$path_key])
+                ? sanitize_text_field(wp_unslash((string) $_POST[$path_key]))
+                : '';
+            $path = $this->agreementFieldPath($submitted_path);
+            $multiple = $this->allowedFilePath($path, $allowed_paths);
+
+            if (null === $multiple) {
+                return $this->documentError(__('Un document cible un champ absent du formulaire autorisé.', 'plugin-apa-agadev'));
+            }
+
+            if (! is_array($upload)) {
+                return $this->documentError(__('La structure d’un document téléversé est invalide.', 'plugin-apa-agadev'));
+            }
+
+            $names = is_array($upload['name'] ?? null) ? $upload['name'] : [$upload['name'] ?? ''];
+            $temporary_paths = is_array($upload['tmp_name'] ?? null) ? $upload['tmp_name'] : [$upload['tmp_name'] ?? ''];
+            $errors = is_array($upload['error'] ?? null) ? $upload['error'] : [$upload['error'] ?? UPLOAD_ERR_NO_FILE];
+            $sizes = is_array($upload['size'] ?? null) ? $upload['size'] : [$upload['size'] ?? 0];
+
+            foreach ($names as $file_index => $original_name) {
+                $error = (int) ($errors[$file_index] ?? UPLOAD_ERR_NO_FILE);
+
+                if (UPLOAD_ERR_NO_FILE === $error) {
+                    continue;
+                }
+
+                if (UPLOAD_ERR_OK !== $error) {
+                    return $this->documentError(__('Le téléversement d’un document a échoué.', 'plugin-apa-agadev'));
+                }
+
+                $temporary_path = (string) ($temporary_paths[$file_index] ?? '');
+                $filename = sanitize_file_name((string) $original_name);
+                $size = (int) ($sizes[$file_index] ?? 0);
+
+                if ($temporary_path === '' || ! is_uploaded_file($temporary_path)) {
+                    return $this->documentError(__('Un document téléversé n’est pas valide.', 'plugin-apa-agadev'));
+                }
+
+                if ($size <= 0 || $size > 5 * MB_IN_BYTES) {
+                    return $this->documentError(__('Chaque document doit avoir une taille maximale de 5 Mo.', 'plugin-apa-agadev'));
+                }
+
+                $checked_type = wp_check_filetype_and_ext($temporary_path, $filename, $allowed_mimes);
+                $mime = is_array($checked_type) ? (string) ($checked_type['type'] ?? '') : '';
+
+                if ($mime === '') {
+                    return $this->documentError(__('Seuls les documents PDF, JPG et PNG sont autorisés.', 'plugin-apa-agadev'));
+                }
+
+                if (count($manifest) >= 10) {
+                    return $this->documentError(__('Une demande APA ne peut pas contenir plus de 10 documents.', 'plugin-apa-agadev'));
+                }
+
+                $multipart_key = 'documents[' . count($manifest) . ']';
+                $files[$multipart_key] = [
+                    'path' => $temporary_path,
+                    'filename' => $filename,
+                    'mime' => $mime,
+                ];
+                $manifest[] = [
+                    'path' => $path,
+                    'multiple' => $multiple,
+                ];
+            }
+        }
+
+        return [
+            'ok' => true,
+            'files' => $files,
+            'manifest' => $manifest,
+            'error' => '',
+        ];
+    }
+
+    /**
+     * Builds file path patterns from only the catalog returned for the user.
+     *
+     * @param array<string, mixed> $catalog
+     * @return array<string, bool>
+     */
+    private function allowedFilePaths(array $catalog): array
+    {
+        $paths = [];
+        $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
+
+        foreach ($sections as $section_key => $section) {
+            if (! is_string($section_key) || ! is_array($section)) {
+                continue;
+            }
+
+            $this->collectFilePaths($section['fields'] ?? [], [$section_key], $paths);
+
+            foreach ((array) ($section['subsections'] ?? []) as $subsection_key => $subsection) {
+                if (! is_array($subsection)) {
+                    continue;
+                }
+
+                $this->collectFilePaths($subsection['fields'] ?? [], [$section_key], $paths);
+
+                if (! is_string($subsection_key)) {
+                    continue;
+                }
+
+                foreach ((array) ($subsection['benefits'] ?? []) as $benefit_key => $benefit) {
+                    if (is_string($benefit_key) && is_array($benefit)) {
+                        $this->collectFilePaths(
+                            $benefit['fields'] ?? [],
+                            [$section_key, $subsection_key, $benefit_key],
+                            $paths
+                        );
+                    }
+                }
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
+     * @param mixed $definitions
+     * @param list<string> $prefix
+     * @param array<string, bool> $paths
+     */
+    private function collectFilePaths($definitions, array $prefix, array &$paths): void
+    {
+        if (! is_array($definitions)) {
+            return;
+        }
+
+        foreach ($definitions as $key => $definition) {
+            if (! is_string($key) || ! is_array($definition)) {
+                continue;
+            }
+
+            if ($this->isList($definition)) {
+                $definition = is_array($definition[0] ?? null) ? $definition[0] : [];
+            }
+
+            $type = (string) ($definition['type'] ?? 'text');
+            $path = [...$prefix, $key];
+
+            if ('repeater' === $type) {
+                $this->collectFilePaths($definition['fields'] ?? [], [...$path, '*'], $paths);
+            } elseif (in_array($type, ['file', 'dropzone'], true)) {
+                $paths[implode('.', $path)] = 'dropzone' === $type;
+            }
+        }
+    }
+
+    /**
+     * Converts an HTML field name to the dotted path stored in Maivou.
+     */
+    private function agreementFieldPath(string $name): string
+    {
+        $path = str_replace([']', '['], ['', '.'], $name);
+        $path = preg_replace('/^agreement\./', '', $path);
+
+        return is_string($path) ? trim($path, '.') : '';
+    }
+
+    /**
+     * Returns whether the matched catalog field supports multiple files.
+     *
+     * @param array<string, bool> $allowed_paths
+     */
+    private function allowedFilePath(string $path, array $allowed_paths): ?bool
+    {
+        $segments = explode('.', $path);
+
+        foreach ($allowed_paths as $pattern => $multiple) {
+            $pattern_segments = explode('.', $pattern);
+
+            if (count($segments) !== count($pattern_segments)) {
+                continue;
+            }
+
+            foreach ($pattern_segments as $index => $pattern_segment) {
+                if ('*' === $pattern_segment ? ! ctype_digit($segments[$index]) : $pattern_segment !== $segments[$index]) {
+                    continue 2;
+                }
+            }
+
+            return $multiple;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{ok:false,files:array,manifest:array,error:string}
+     */
+    private function documentError(string $message): array
+    {
+        return [
+            'ok' => false,
+            'files' => [],
+            'manifest' => [],
+            'error' => $message,
+        ];
     }
 
     /**
@@ -224,6 +478,18 @@ final class ShortcodeService
             }
 
             if (in_array($type, ['file', 'dropzone'], true)) {
+                continue;
+            }
+
+            if ('number' === $type) {
+                if (! is_numeric($raw)) {
+                    continue;
+                }
+
+                $numeric_value = (float) $raw;
+                $normalized[$key] = floor($numeric_value) === $numeric_value
+                    ? (int) $numeric_value
+                    : $numeric_value;
                 continue;
             }
 
@@ -330,7 +596,7 @@ final class ShortcodeService
 
         wp_enqueue_style('plugin-apa-agadev');
 
-        if ('agreement-form' === $template) {
+        if (in_array($template, ['agreement-form', 'agreements'], true)) {
             wp_enqueue_script('plugin-apa-agadev');
         }
         extract($variables, EXTR_SKIP);
