@@ -27,8 +27,8 @@
 }
 
 .acl_shortcode_apa_form .acl_shortcode_apa_repeater_row {
-    background: rgba(8, 67, 39, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: #edf5f0;
+    border: 1px solid #cadbd1;
     border-radius: 0.65rem;
     box-sizing: border-box;
     min-width: 0;
@@ -156,10 +156,15 @@
 .acl_shortcode_apa_form {
     --apa-form-accent: #dc6907;
     --apa-form-green: #11663a;
-    background: var(--apa-form-green);
-    border: 0;
+    --apa-form-ink: #183126;
+    --apa-form-muted: #5b6a62;
+    --apa-form-surface: #fff;
+    --apa-form-surface-soft: #edf5f0;
+    --apa-form-border: #cadbd1;
+    background: #f4f8f5;
+    border: 1px solid #dbe7df;
     border-radius: 1.1rem;
-    color: #fff;
+    color: var(--apa-form-ink);
     box-sizing: border-box;
     margin: 0;
     max-width: none;
@@ -221,8 +226,9 @@
 }
 
 .acl_shortcode_apa_form .acl_shortcode_subtitle {
+    color: var(--apa-form-muted);
     margin-top: 0.45rem;
-    opacity: 0.82;
+    opacity: 1;
 }
 
 .acl_shortcode_apa_step[hidden] {
@@ -239,6 +245,8 @@
 .acl_shortcode_apa_hierarchy,
 .acl_shortcode_apa_review_summary,
 .acl_shortcode_apa_step_actions,
+.acl_shortcode_apa_section_fields,
+.acl_shortcode_apa_subsections,
 .acl_shortcode_apa_step > .acl_shortcode_apa_subsection,
 .acl_shortcode_apa_step > .acl_shortcode_apa_repeater,
 .acl_shortcode_apa_step > .acl_shortcode_apa_benefits {
@@ -246,9 +254,10 @@
 }
 
 .acl_shortcode_apa_hierarchy {
-    background: #1d7046;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--apa-form-green);
+    border: 1px solid #0d582f;
     border-radius: 0.8rem;
+    color: #fff;
     display: grid;
     gap: 0.65rem;
     padding: 0.9rem 1rem;
@@ -320,17 +329,13 @@
     margin-bottom: 0.5rem;
 }
 
-.acl_shortcode_apa_step_heading--repeated-title {
-    margin-bottom: 0;
-    padding-inline: 0.25rem;
-}
-
 .acl_shortcode_apa_step_heading .acl_shortcode_title,
 .acl_shortcode_apa_step_heading .acl_shortcode_subtitle {
     margin-bottom: 0;
 }
 
 .acl_shortcode_apa_step_heading .acl_shortcode_title {
+    color: var(--apa-form-green);
     font-size: clamp(1.55rem, 4vw, 2.25rem);
     line-height: 1.12;
     margin-top: 0;
@@ -349,6 +354,7 @@
     line-height: 1;
     margin-top: 0.15rem;
     width: 2rem;
+    color: #fff;
 }
 
 .acl_shortcode_apa_form .acl_shortcode_field {
@@ -381,8 +387,8 @@
 .acl_shortcode_apa_form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .acl_shortcode_apa_form select,
 .acl_shortcode_apa_form textarea {
-    background: #f3f4f3;
-    border: 1px solid rgba(255, 255, 255, 0.62);
+    background: var(--apa-form-surface);
+    border: 1px solid #bccdc3;
     border-radius: 0.45rem;
     box-sizing: border-box;
     color: #18251e;
@@ -408,7 +414,7 @@
 }
 
 .acl_shortcode_apa_form label.acl_shortcode_option {
-    color: #fff;
+    color: var(--apa-form-ink);
 }
 
 .acl_shortcode_apa_choices {
@@ -419,8 +425,8 @@
 
 .acl_shortcode_apa_choice {
     align-items: center;
-    background: #f3f4f3;
-    border: 1px solid rgba(255, 255, 255, 0.62);
+    background: var(--apa-form-surface);
+    border: 1px solid #bccdc3;
     border-radius: 0.45rem;
     box-sizing: border-box;
     color: #18251e;
@@ -462,7 +468,8 @@
 
 .acl_shortcode_apa_dropzone {
     align-items: center;
-    border: 3px dashed rgba(255, 255, 255, 0.72);
+    background: var(--apa-form-surface-soft);
+    border: 3px dashed #8db6a0;
     border-radius: 0.75rem;
     display: flex;
     flex-direction: column;
@@ -476,8 +483,8 @@
 
 .acl_shortcode_apa_dropzone:hover,
 .acl_shortcode_apa_dropzone.is-dragging {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #fff;
+    background: #e2f0e7;
+    border-color: var(--apa-form-green);
 }
 
 .acl_shortcode_apa_file_input {
@@ -508,9 +515,10 @@
 .acl_shortcode_apa_form .acl_shortcode_apa_subsection,
 .acl_shortcode_apa_form .acl_shortcode_apa_repeater,
 .acl_shortcode_apa_form .acl_shortcode_apa_benefit {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--apa-form-surface);
+    border: 1px solid var(--apa-form-border);
     border-radius: 0.75rem;
+    box-shadow: 0 0.35rem 1rem rgba(17, 102, 58, 0.06);
     padding: 1rem;
 }
 
@@ -523,6 +531,18 @@
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.acl_shortcode_apa_section_fields {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.acl_shortcode_apa_subsections {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .acl_shortcode_apa_form .acl_shortcode_apa_benefits {
@@ -559,14 +579,15 @@
 
 .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_title,
 .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_subtitle,
+.acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_apa_benefits,
 .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_apa_benefit {
     grid-column: 1 / -1;
 }
 
 .acl_shortcode_apa_step_actions {
     align-items: center;
-    background: var(--apa-form-green);
-    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    background: transparent;
+    border-top: 1px solid var(--apa-form-border);
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
@@ -703,9 +724,9 @@
 }
 
 .acl_shortcode_apa_step_actions .acl_shortcode_button_button {
-    background: transparent;
-    border-color: rgba(255, 255, 255, 0.75);
-    color: #fff;
+    background: #fff;
+    border-color: var(--apa-form-green);
+    color: var(--apa-form-green);
 }
 
 @media (max-width: 900px) {
@@ -740,6 +761,7 @@
     }
 
     .acl_shortcode_apa_step,
+    .acl_shortcode_apa_section_fields,
     .acl_shortcode_apa_form .acl_shortcode_apa_subsection,
     .acl_shortcode_apa_form .acl_shortcode_apa_repeater_row,
     .acl_shortcode_apa_form .acl_shortcode_apa_benefit {
@@ -750,10 +772,13 @@
     .acl_shortcode_apa_hierarchy,
     .acl_shortcode_apa_review_summary,
     .acl_shortcode_apa_step_actions,
+    .acl_shortcode_apa_section_fields,
+    .acl_shortcode_apa_subsections,
     .acl_shortcode_apa_step > .acl_shortcode_apa_subsection,
     .acl_shortcode_apa_step > .acl_shortcode_apa_repeater,
     .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_title,
     .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_subtitle,
+    .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_apa_benefits,
     .acl_shortcode_apa_form .acl_shortcode_apa_subsection > .acl_shortcode_apa_benefit {
         grid-column: auto;
     }
@@ -1086,7 +1111,7 @@ body.acl_shortcode_modal_open {
     }
 
     .acl_shortcode_agreement_modal_body {
-        background: var(--apa-form-green, #11663a);
+        background: #f4f8f5;
         flex: 1 1 auto;
         padding: 0;
     }

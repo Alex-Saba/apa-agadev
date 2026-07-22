@@ -144,44 +144,53 @@
         dataSteps.forEach(function (step) {
             var sectionIndex = String(step.dataset.apaSectionIndex || 0);
             var sectionCard = sectionCards[sectionIndex];
+            var sectionTitleText = step.querySelector('.acl_shortcode_apa_section_title').textContent.trim();
 
             if (!sectionCard) {
                 sectionCard = document.createElement('article');
                 sectionCard.className = 'acl_shortcode_apa_review_section';
 
                 var sectionTitle = document.createElement('h3');
-                sectionTitle.textContent = step.querySelector('.acl_shortcode_apa_section_title').textContent.trim();
+                sectionTitle.textContent = sectionTitleText;
                 sectionCard.appendChild(sectionTitle);
                 summary.appendChild(sectionCard);
                 sectionCards[sectionIndex] = sectionCard;
             }
 
-            var subsection = document.createElement('section');
-            subsection.className = 'acl_shortcode_apa_review_subsection';
+            step.querySelectorAll('[data-apa-review-group]').forEach(function (group) {
+                var subsection = document.createElement('section');
+                var groupTitle = String(group.dataset.apaReviewGroupTitle || '').trim();
+                var values = document.createElement('dl');
 
-            var subsectionTitle = document.createElement('h4');
-            subsectionTitle.textContent = step.querySelector('.acl_shortcode_apa_step_heading h2').textContent.trim();
-            subsection.appendChild(subsectionTitle);
+                subsection.className = 'acl_shortcode_apa_review_subsection';
 
-            var values = document.createElement('dl');
-            step.querySelectorAll('.acl_shortcode_apa_field').forEach(function (field) {
-                var label = field.querySelector('.acl_shortcode_label, .acl_shortcode_option');
-                if (!label) {
-                    return;
+                if (groupTitle && groupTitle !== sectionTitleText) {
+                    var subsectionTitle = document.createElement('h4');
+                    subsectionTitle.textContent = groupTitle;
+                    subsection.appendChild(subsectionTitle);
                 }
 
-                var item = document.createElement('div');
-                var term = document.createElement('dt');
-                var description = document.createElement('dd');
-                term.textContent = label.textContent.replace('*', '').trim();
-                description.textContent = fieldSummaryValue(field);
-                item.appendChild(term);
-                item.appendChild(description);
-                values.appendChild(item);
-            });
+                group.querySelectorAll('.acl_shortcode_apa_field').forEach(function (field) {
+                    var label = field.querySelector('.acl_shortcode_label, .acl_shortcode_option');
+                    if (!label) {
+                        return;
+                    }
 
-            subsection.appendChild(values);
-            sectionCard.appendChild(subsection);
+                    var item = document.createElement('div');
+                    var term = document.createElement('dt');
+                    var description = document.createElement('dd');
+                    term.textContent = label.textContent.replace('*', '').trim();
+                    description.textContent = fieldSummaryValue(field);
+                    item.appendChild(term);
+                    item.appendChild(description);
+                    values.appendChild(item);
+                });
+
+                if (values.children.length) {
+                    subsection.appendChild(values);
+                    sectionCard.appendChild(subsection);
+                }
+            });
         });
     }
 

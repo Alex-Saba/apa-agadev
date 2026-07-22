@@ -18,8 +18,8 @@ $submission_succeeded = is_array($submission) && ! empty($submission['ok']);
 $section_groups = [];
 $steps = [];
 
-// Preserve Maivou's section hierarchy while exposing each subsection as an
-// internal step. Payload paths remain based on the original catalog keys.
+// One navigation step represents one Maivou section. Its fields and all of its
+// role-filtered subsections remain visible together without changing payload paths.
 foreach ($sections as $section_key => $section) {
     if (! is_string($section_key) || ! is_array($section)) {
         continue;
@@ -27,53 +27,39 @@ foreach ($sections as $section_key => $section) {
 
     $section_title = (string) ($section['title'] ?? $section_key);
     $section_fields = is_array($section['fields'] ?? null) ? $section['fields'] : [];
-    $section_steps = [];
-
-    if ($section_fields !== []) {
-        $section_steps[] = [
-            'section_key' => $section_key,
-            'title' => $section_title,
-            'description' => (string) ($section['description'] ?? ''),
-            'fields' => $section_fields,
-            'subsection_key' => '',
-            'benefits' => [],
-        ];
-    }
+    $subsections = [];
 
     foreach ((array) ($section['subsections'] ?? []) as $subsection_key => $subsection) {
         if (! is_string($subsection_key) || ! is_array($subsection)) {
             continue;
         }
 
-        $section_steps[] = [
-            'section_key' => $section_key,
+        $subsections[] = [
+            'key' => $subsection_key,
             'title' => (string) ($subsection['title'] ?? $subsection_key),
             'description' => (string) ($subsection['description'] ?? ''),
             'fields' => is_array($subsection['fields'] ?? null) ? $subsection['fields'] : [],
-            'subsection_key' => $subsection_key,
             'benefits' => is_array($subsection['benefits'] ?? null) ? $subsection['benefits'] : [],
         ];
     }
 
-    if ($section_steps === []) {
+    if ($section_fields === [] && $subsections === []) {
         continue;
     }
 
     $section_index = count($section_groups);
-    $section_step_count = count($section_steps);
     $section_groups[] = [
         'key' => $section_key,
         'title' => $section_title,
-        'step_count' => $section_step_count,
     ];
-
-    foreach ($section_steps as $section_step_index => $step) {
-        $step['section_index'] = $section_index;
-        $step['section_title'] = $section_title;
-        $step['section_step_index'] = $section_step_index;
-        $step['section_step_count'] = $section_step_count;
-        $steps[] = $step;
-    }
+    $steps[] = [
+        'section_key' => $section_key,
+        'section_index' => $section_index,
+        'title' => $section_title,
+        'description' => (string) ($section['description'] ?? ''),
+        'fields' => $section_fields,
+        'subsections' => $subsections,
+    ];
 }
 
 $section_count = count($section_groups);
@@ -355,43 +341,54 @@ $render_benefits = static function (
                 <?php
                 $section_key = (string) $step['section_key'];
                 $section_values = is_array($submitted[$section_key] ?? null) ? $submitted[$section_key] : [];
-                $subsection_key = (string) $step['subsection_key'];
                 $section_index = (int) $step['section_index'];
-                $section_step_index = (int) $step['section_step_index'];
-                $section_step_count = (int) $step['section_step_count'];
                 $is_first_step = 0 === $step_index;
                 $is_last_data_step = $step_index === $step_count - 1;
-                // The API may use the same label for a section and its first
-                // subsection. Avoid presenting that title twice visually.
-                $title_repeats_section = trim((string) $step['title']) === trim((string) $step['section_title']);
                 ?>
-                <section class="acl_shortcode_section acl_shortcode_apa_step" data-apa-step data-apa-step-index="<?php echo esc_attr((string) $step_index); ?>" data-apa-section-index="<?php echo esc_attr((string) $section_index); ?>" data-apa-section-step-index="<?php echo esc_attr((string) $section_step_index); ?>"<?php echo $is_first_step ? '' : ' hidden'; ?>>
+                <section class="acl_shortcode_section acl_shortcode_apa_step" data-apa-step data-apa-step-index="<?php echo esc_attr((string) $step_index); ?>" data-apa-section-index="<?php echo esc_attr((string) $section_index); ?>"<?php echo $is_first_step ? '' : ' hidden'; ?>>
                     <div class="acl_shortcode_apa_hierarchy acl_shortcode_div">
                         <div class="acl_shortcode_apa_section_meta acl_shortcode_div">
                             <span class="acl_shortcode_apa_section_count acl_shortcode_span"><?php echo esc_html(sprintf(__('Section %1$d sur %2$d', 'plugin-apa-agadev'), $section_index + 1, $section_count)); ?></span>
-                            <strong class="acl_shortcode_apa_section_title"><?php echo esc_html((string) $step['section_title']); ?></strong>
+                            <strong class="acl_shortcode_apa_section_title"><?php echo esc_html((string) $step['title']); ?></strong>
                         </div>
                         <div class="acl_shortcode_apa_section_track" aria-hidden="true">
                             <?php foreach ($section_groups as $track_index => $section_group) : ?>
                                 <span class="acl_shortcode_apa_section_segment<?php echo $track_index < $section_index ? ' is-complete' : ($track_index === $section_index ? ' is-active' : ''); ?>"></span>
                             <?php endforeach; ?>
                         </div>
-                        <span class="acl_shortcode_apa_substep_count acl_shortcode_span"><?php echo esc_html(sprintf(__('Étape %1$d sur %2$d dans cette section', 'plugin-apa-agadev'), $section_step_index + 1, $section_step_count)); ?></span>
                     </div>
-                    <div class="acl_shortcode_apa_step_heading<?php echo $title_repeats_section ? ' acl_shortcode_apa_step_heading--repeated-title' : ''; ?> acl_shortcode_div">
-                        <?php if (! $title_repeats_section) : ?>
-                            <span class="acl_shortcode_apa_step_number acl_shortcode_span" aria-hidden="true"><?php echo esc_html((string) ($section_step_index + 1)); ?></span>
-                        <?php endif; ?>
+                    <div class="acl_shortcode_apa_step_heading acl_shortcode_div">
+                        <span class="acl_shortcode_apa_step_number acl_shortcode_span" aria-hidden="true"><?php echo esc_html((string) ($section_index + 1)); ?></span>
                         <div class="acl_shortcode_div">
-                            <span class="screen-reader-text"><?php echo esc_html(sprintf(__('Section %1$d sur %2$d, étape %3$d sur %4$d', 'plugin-apa-agadev'), $section_index + 1, $section_count, $section_step_index + 1, $section_step_count)); ?></span>
-                            <h2 class="<?php echo esc_attr($title_repeats_section ? 'screen-reader-text' : 'acl_shortcode_title acl_shortcode_h2'); ?>"><?php echo esc_html((string) $step['title']); ?></h2>
+                            <span class="screen-reader-text"><?php echo esc_html(sprintf(__('Section %1$d sur %2$d', 'plugin-apa-agadev'), $section_index + 1, $section_count)); ?></span>
+                            <h2 class="acl_shortcode_title acl_shortcode_h2"><?php echo esc_html((string) $step['title']); ?></h2>
                             <?php if ('' !== $step['description']) : ?><div class="acl_shortcode_subtitle acl_shortcode_div"><?php echo esc_html((string) $step['description']); ?></div><?php endif; ?>
                         </div>
                     </div>
 
-                    <?php $render_fields($step['fields'], 'agreement[' . $section_key . ']', $section_values); ?>
-                    <?php if ($step['benefits'] !== [] && '' !== $subsection_key) : ?>
-                        <?php $render_benefits($step['benefits'], 'agreement[' . $section_key . '][' . $subsection_key . ']', is_array($section_values[$subsection_key] ?? null) ? $section_values[$subsection_key] : []); ?>
+                    <?php if ($step['fields'] !== []) : ?>
+                        <div class="acl_shortcode_apa_section_fields acl_shortcode_div" data-apa-review-group data-apa-review-group-title="<?php echo esc_attr((string) $step['title']); ?>">
+                            <?php $render_fields($step['fields'], 'agreement[' . $section_key . ']', $section_values); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($step['subsections'] !== []) : ?>
+                    <div class="acl_shortcode_apa_subsections acl_shortcode_div">
+                        <?php foreach ($step['subsections'] as $subsection) : ?>
+                            <?php
+                            $subsection_key = (string) $subsection['key'];
+                            $subsection_values = is_array($section_values[$subsection_key] ?? null) ? $section_values[$subsection_key] : [];
+                            ?>
+                            <section class="acl_shortcode_apa_subsection acl_shortcode_div" data-apa-review-group data-apa-review-group-title="<?php echo esc_attr((string) $subsection['title']); ?>">
+                                <h3 class="acl_shortcode_title acl_shortcode_h3"><?php echo esc_html((string) $subsection['title']); ?></h3>
+                                <?php if ('' !== $subsection['description']) : ?><div class="acl_shortcode_subtitle acl_shortcode_div"><?php echo esc_html((string) $subsection['description']); ?></div><?php endif; ?>
+                                <?php $render_fields($subsection['fields'], 'agreement[' . $section_key . ']', $section_values); ?>
+                                <?php if ($subsection['benefits'] !== []) : ?>
+                                    <?php $render_benefits($subsection['benefits'], 'agreement[' . $section_key . '][' . $subsection_key . ']', $subsection_values); ?>
+                                <?php endif; ?>
+                            </section>
+                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
 
                     <div class="acl_shortcode_actions acl_shortcode_apa_step_actions acl_shortcode_div">

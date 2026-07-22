@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.14
+Stable tag: 2026.7.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,10 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.15 =
+* Navigation simplifiee : chaque section Maivou constitue une etape et affiche toutes ses sous-sections autorisees.
+* Reequilibrage des couleurs du formulaire avec des surfaces claires, tout en conservant le vert Maivou et l'orange Agadev comme couleurs de marque.
 
 = 2026.7.14 =
 * Refonte de l'espace des agrements avec formulaire modal, navigation par sections et synthese avant envoi.
