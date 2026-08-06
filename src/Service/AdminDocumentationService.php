@@ -50,7 +50,7 @@ final class AdminDocumentationService
             ],
             [
                 'code' => '[apa_agadev_agreements]',
-                'description' => __('Affiche les accords APA visibles par l’utilisateur connecté.', 'plugin-apa-agadev'),
+                'description' => __('Affiche les accords APA visibles, leur consultation détaillée et leur téléchargement PDF sécurisé.', 'plugin-apa-agadev'),
             ],
         ];
         ?>

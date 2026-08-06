@@ -11,9 +11,14 @@ final class ShortcodeService
 {
     private MaivouDataService $data;
 
-    public function __construct(MaivouDataService $data)
-    {
+    private AgreementPresentationService $presentation;
+
+    public function __construct(
+        MaivouDataService $data,
+        ?AgreementPresentationService $presentation = null
+    ) {
         $this->data = $data;
+        $this->presentation = $presentation ?? new AgreementPresentationService();
     }
 
     /**
@@ -49,6 +54,8 @@ final class ShortcodeService
         if (! $options_response['ok']) {
             return $this->renderError($options_response);
         }
+
+        $remoteOptions = is_array($options_response['data']) ? $options_response['data'] : [];
 
         $submitted = [];
         $submission = null;
@@ -91,7 +98,7 @@ final class ShortcodeService
 
         return $this->renderTemplate('agreement-form', [
             'catalog' => $catalog,
-            'remote_options' => is_array($options_response['data']) ? $options_response['data'] : [],
+            'remote_options' => $remoteOptions,
             'submitted' => $submitted,
             'submission' => $submission,
             'layout' => $layout,
@@ -105,19 +112,92 @@ final class ShortcodeService
     {
         // Process a possible creation first so the refreshed list can include it.
         $form = $this->renderAgreementForm(['layout' => 'modal']);
-        $response = $this->data->getAgreements();
-        $agreements_error = $response['ok'] ? '' : trim((string) ($response['error'] ?? ''));
+        $agreementId = $this->requestedAgreementId();
+        $agreements = [];
+        $agreements_error = '';
+        $detail = '';
 
-        if (! $response['ok'] && '' === $agreements_error) {
-            $agreements_error = __('Impossible de récupérer les agréments depuis Maivou.', 'plugin-apa-agadev');
+        if ($agreementId > 0) {
+            $detailResponse = $this->data->getAgreement($agreementId);
+
+            if (! $detailResponse['ok'] || ! is_array($detailResponse['data'])) {
+                $agreements_error = trim((string) ($detailResponse['error'] ?? ''));
+                if ('' === $agreements_error) {
+                    $agreements_error = __('Impossible de récupérer cette demande APA depuis Maivou.', 'plugin-apa-agadev');
+                }
+            } else {
+                $detail = $this->renderAgreementDetail($detailResponse['data']);
+            }
+        } else {
+            $response = $this->data->getAgreements();
+
+            if ($response['ok'] && is_array($response['data'])) {
+                $agreements = $response['data'];
+            } else {
+                $agreements_error = trim((string) ($response['error'] ?? ''));
+                if ('' === $agreements_error) {
+                    $agreements_error = __('Impossible de récupérer les agréments depuis Maivou.', 'plugin-apa-agadev');
+                }
+            }
         }
 
         return $this->renderTemplate('agreements', [
-            'agreements' => $response['ok'] && is_array($response['data']) ? $response['data'] : [],
+            'agreements' => $agreements,
             'agreements_error' => $agreements_error,
             'form' => $form,
             'open_modal' => $this->isAgreementSubmission(),
+            'agreement_detail' => $detail,
         ]);
+    }
+
+    /** @param array<string, mixed> $agreement */
+    private function renderAgreementDetail(array $agreement): string
+    {
+        $agreementId = (int) ($agreement['id'] ?? 0);
+        $backUrl = remove_query_arg(['apa_agadev_agreement', 'agreement_page']);
+
+        try {
+            $detail = $this->presentation->present($agreement);
+        } catch (\UnexpectedValueException $exception) {
+            $this->logInvalidPresentation($agreementId, $exception);
+
+            return $this->renderPresentationUnavailable();
+        }
+
+        return $this->renderTemplate('agreement-detail', [
+            'agreement_detail' => $detail,
+            'back_url' => $backUrl,
+            'download_url' => AgreementPdfService::downloadUrl($agreementId),
+        ]);
+    }
+
+    private function renderPresentationUnavailable(): string
+    {
+        return '<div class="acl_shortcode_notice acl_shortcode_notice--error acl_shortcode_apa_error acl_shortcode_div" role="alert">'
+            . esc_html__('La présentation détaillée de cette demande APA est indisponible.', 'plugin-apa-agadev')
+            . '</div>';
+    }
+
+    private function logInvalidPresentation(int $agreementId, \UnexpectedValueException $exception): void
+    {
+        // Only structural context is logged; the agreement payload stays private.
+        error_log(sprintf(
+            '[APA Agadev] Invalid agreement presentation for agreement %d: %s',
+            $agreementId,
+            $exception->getMessage()
+        ));
+    }
+
+    /**
+     * Reads the agreement selected in the user's list without accepting arrays.
+     */
+    private function requestedAgreementId(): int
+    {
+        if (! isset($_GET['apa_agadev_agreement']) || ! is_scalar($_GET['apa_agadev_agreement'])) {
+            return 0;
+        }
+
+        return absint(wp_unslash((string) $_GET['apa_agadev_agreement']));
     }
 
     /**

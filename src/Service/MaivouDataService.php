@@ -153,6 +153,27 @@ final class MaivouDataService
     }
 
     /**
+     * Returns one complete agreement after Maivou has authorized the current user.
+     *
+     * @return array{ok:bool,status:int,data:mixed,headers:array,set_cookie:array,error:?string}
+     */
+    public function getAgreement(int $agreementId): array
+    {
+        if ($agreementId < 1) {
+            return $this->errorResponse(
+                400,
+                __('L’identifiant de la demande APA est invalide.', 'plugin-apa-agadev')
+            );
+        }
+
+        return $this->call([
+            'endpoint' => '/agreements/' . $agreementId,
+            'method' => 'GET',
+            'auth' => 'user',
+        ]);
+    }
+
+    /**
      * Reads one machine-authenticated page of final lots for the WordPress cron.
      *
      * @return array{ok:bool,status:int,data:mixed,headers:array,set_cookie:array,error:?string}

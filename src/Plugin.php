@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PluginApaAgadev;
 
 use PluginApaAgadev\Service\AdminDocumentationService;
+use PluginApaAgadev\Service\AgreementPdfService;
+use PluginApaAgadev\Service\AgreementPresentationService;
 use PluginApaAgadev\Service\LotMediaService;
 use PluginApaAgadev\Service\LotSyncService;
 use PluginApaAgadev\Service\MaivouDataService;
@@ -23,18 +25,23 @@ final class Plugin
 
     private LotMediaService $lotMedia;
 
+    private AgreementPdfService $agreementPdf;
+
     public function __construct(
         ?ShortcodeService $shortcodes = null,
         ?AdminDocumentationService $adminDocumentation = null,
         ?LotSyncService $lotSync = null,
-        ?LotMediaService $lotMedia = null
+        ?LotMediaService $lotMedia = null,
+        ?AgreementPdfService $agreementPdf = null
     )
     {
         $data = new MaivouDataService();
-        $this->shortcodes = $shortcodes ?? new ShortcodeService($data);
+        $presentation = new AgreementPresentationService();
+        $this->shortcodes = $shortcodes ?? new ShortcodeService($data, $presentation);
         $this->adminDocumentation = $adminDocumentation ?? new AdminDocumentationService();
         $this->lotSync = $lotSync ?? new LotSyncService($data);
         $this->lotMedia = $lotMedia ?? new LotMediaService();
+        $this->agreementPdf = $agreementPdf ?? new AgreementPdfService($data, $presentation);
     }
 
     /**
@@ -48,6 +55,7 @@ final class Plugin
         add_action('init', [$this->lotSync, 'ensureScheduled']);
         add_action(LotSyncService::CRON_HOOK, [$this->lotSync, 'syncLots']);
         add_action('admin_post_' . LotSyncService::ADMIN_ACTION, [$this->lotSync, 'handleManualSync']);
+        add_action('template_redirect', [$this->agreementPdf, 'handleDownload'], 1);
         add_action('wp_enqueue_scripts', [$this, 'registerAssets']);
         add_action('wp_enqueue_scripts', [$this->lotSync, 'enqueueSingleAssets'], 20);
         add_action('admin_menu', [$this->adminDocumentation, 'registerAdminMenu']);

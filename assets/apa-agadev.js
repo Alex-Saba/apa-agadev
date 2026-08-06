@@ -282,7 +282,74 @@
         return true;
     }
 
+    function syncAgreementSection(section) {
+        var summary = section ? section.querySelector('.acl_shortcode_agreement_section_summary') : null;
+
+        if (summary) {
+            summary.setAttribute('aria-expanded', section.open ? 'true' : 'false');
+        }
+    }
+
+    function setAgreementSections(detail, open) {
+        var firstSection = null;
+
+        detail.querySelectorAll('[data-apa-agreement-section]').forEach(function (section) {
+            firstSection = firstSection || section;
+            section.open = open;
+            syncAgreementSection(section);
+        });
+
+        if (open && firstSection) {
+            activateAgreementSectionLink(detail, firstSection.id);
+        }
+    }
+
+    function activateAgreementSectionLink(detail, sectionId) {
+        detail.querySelectorAll('[data-apa-agreement-section-link]').forEach(function (link) {
+            var isActive = link.getAttribute('href') === '#' + sectionId;
+            link.classList.toggle('is-active', isActive);
+
+            if (isActive) {
+                link.setAttribute('aria-current', 'true');
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+    }
+
     document.addEventListener('click', function (event) {
+        var sectionAction = event.target.closest('[data-apa-agreement-sections-action]');
+
+        if (sectionAction) {
+            var detail = sectionAction.closest('[data-apa-agreement-detail]');
+            if (detail) {
+                setAgreementSections(detail, 'expand' === sectionAction.dataset.apaAgreementSectionsAction);
+            }
+            return;
+        }
+
+        var sectionLink = event.target.closest('[data-apa-agreement-section-link]');
+
+        if (sectionLink) {
+            var sectionDetail = sectionLink.closest('[data-apa-agreement-detail]');
+            var targetId = sectionLink.getAttribute('href').replace(/^#/, '');
+            var targetSection = sectionDetail ? document.getElementById(targetId) : null;
+
+            if (targetSection && sectionDetail.contains(targetSection)) {
+                event.preventDefault();
+                targetSection.open = true;
+                syncAgreementSection(targetSection);
+                activateAgreementSectionLink(sectionDetail, targetId);
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                var targetSummary = targetSection.querySelector('.acl_shortcode_agreement_section_summary');
+                if (targetSummary) {
+                    targetSummary.focus({ preventScroll: true });
+                }
+            }
+            return;
+        }
+
         var modalOpenButton = event.target.closest('[data-apa-agreement-modal-open]');
 
         if (modalOpenButton) {
@@ -434,6 +501,29 @@
     function initializeStepForms() {
         document.querySelectorAll('[data-apa-step-form]').forEach(function (form) {
             showStep(form, 0, false);
+        });
+
+        document.querySelectorAll('[data-apa-agreement-detail]').forEach(function (detail) {
+            var firstOpenSection = null;
+
+            detail.querySelectorAll('[data-apa-agreement-section]').forEach(function (section) {
+                syncAgreementSection(section);
+                section.addEventListener('toggle', function () {
+                    syncAgreementSection(section);
+
+                    if (section.open) {
+                        activateAgreementSectionLink(detail, section.id);
+                    }
+                });
+
+                if (!firstOpenSection && section.open) {
+                    firstOpenSection = section;
+                }
+            });
+
+            if (firstOpenSection) {
+                activateAgreementSectionLink(detail, firstOpenSection.id);
+            }
         });
 
         document.querySelectorAll('[data-apa-modal-initial-open]').forEach(function (modal) {

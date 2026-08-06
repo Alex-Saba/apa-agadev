@@ -6,6 +6,7 @@
  * @var string $agreements_error
  * @var string $form
  * @var bool $open_modal
+ * @var string $agreement_detail
  */
 
 if (! defined('ABSPATH')) {
@@ -50,15 +51,19 @@ $format_date = static function ($value): string {
         <div class="acl_shortcode_div">
             <h2 class="acl_shortcode_agreements_title acl_shortcode_h2"><?php esc_html_e('Mes agréments', 'plugin-apa-agadev'); ?></h2>
         </div>
-        <button type="button" class="acl_shortcode_agreements_add acl_shortcode_button_button" data-apa-agreement-modal-open aria-haspopup="dialog" aria-controls="<?php echo esc_attr($modal_id); ?>">
-            <?php esc_html_e('Ajouter un agrément', 'plugin-apa-agadev'); ?>
-        </button>
+        <?php if ('' === $agreement_detail) : ?>
+            <button type="button" class="acl_shortcode_agreements_add acl_shortcode_button_button" data-apa-agreement-modal-open aria-haspopup="dialog" aria-controls="<?php echo esc_attr($modal_id); ?>">
+                <?php esc_html_e('Ajouter un agrément', 'plugin-apa-agadev'); ?>
+            </button>
+        <?php endif; ?>
     </header>
 
     <?php if ('' !== $agreements_error) : ?>
         <div class="acl_shortcode_notice acl_shortcode_notice--error acl_shortcode_apa_error acl_shortcode_div" role="alert">
             <?php echo esc_html($agreements_error); ?>
         </div>
+    <?php elseif ('' !== $agreement_detail) : ?>
+        <?php echo $agreement_detail; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by agreement-detail.php. ?>
     <?php elseif ($agreement_items === []) : ?>
         <div class="acl_shortcode_agreements_empty acl_shortcode_div">
             <h3 class="acl_shortcode_h3"><?php esc_html_e('Aucun agrément pour le moment', 'plugin-apa-agadev'); ?></h3>
@@ -73,6 +78,7 @@ $format_date = static function ($value): string {
                         <th scope="col"><?php esc_html_e('Début de validité', 'plugin-apa-agadev'); ?></th>
                         <th scope="col"><?php esc_html_e('Fin de validité', 'plugin-apa-agadev'); ?></th>
                         <th scope="col"><?php esc_html_e('Statut', 'plugin-apa-agadev'); ?></th>
+                        <th scope="col"><span class="screen-reader-text"><?php esc_html_e('Actions', 'plugin-apa-agadev'); ?></span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,6 +91,11 @@ $format_date = static function ($value): string {
                         $status = strtolower((string) ($agreement['status'] ?? ''));
                         $status_label = $status_labels[$status] ?? ('' !== $status ? ucfirst($status) : '—');
                         $status_class = $status;
+                        $detail_url = (string) add_query_arg([
+                            'view' => 'agrements',
+                            'apa_agadev_agreement' => (int) ($agreement['id'] ?? 0),
+                        ], get_permalink());
+                        $download_url = \PluginApaAgadev\Service\AgreementPdfService::downloadUrl((int) ($agreement['id'] ?? 0));
                         $end_timestamp = isset($agreement['ends_at']) && is_string($agreement['ends_at'])
                             ? strtotime($agreement['ends_at'])
                             : false;
@@ -101,6 +112,10 @@ $format_date = static function ($value): string {
                             <td><?php echo esc_html($format_date($agreement['starts_at'] ?? null)); ?></td>
                             <td><?php echo esc_html($format_date($agreement['ends_at'] ?? null)); ?></td>
                             <td><span class="acl_shortcode_agreements_status acl_shortcode_agreements_status--<?php echo esc_attr(sanitize_html_class($status_class ?: 'unknown')); ?>"><?php echo esc_html($status_label); ?></span></td>
+                            <td class="acl_shortcode_agreements_actions">
+                                <a href="<?php echo esc_url($detail_url); ?>"><?php esc_html_e('Consulter', 'plugin-apa-agadev'); ?></a>
+                                <a href="<?php echo esc_url($download_url); ?>"><?php esc_html_e('PDF', 'plugin-apa-agadev'); ?></a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
