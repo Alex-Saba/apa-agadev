@@ -53,13 +53,24 @@ Les formulaires et les accords utilisent la session de l'utilisateur connecte. L
 6. La demande est envoyee avec `POST /api/agreements`.
 7. La reponse ou l'erreur Maivou est affichee explicitement.
 
-Les champs de fichier restent indisponibles tant que Maivou ne fournit pas de contrat de televersement pour les documents concernes.
+Les fichiers PDF, JPG et PNG sont transmis de maniere privee a Maivou. WordPress
+ne conserve aucune copie de ces documents dans sa mediatheque.
 
 ### Accords APA (`[apa_agadev_agreements]`)
 
 1. Le plugin appelle `GET /api/agreements`.
 2. Maivou applique l'authentification et les permissions du compte.
 3. WordPress restitue uniquement les accords renvoyes par l'API.
+4. L'action `Consulter` appelle `GET /api/agreements/{agreement}` et affiche la structure `presentation` fournie par Maivou.
+5. L'action `PDF` relit le meme detail autorise et genere un document A4 telechargeable sans enregistrer de copie locale.
+
+Les liens PDF sont reserves aux utilisateurs connectes et proteges par un nonce
+WordPress. Maivou reste la source de verite et applique sa politique d'acces a
+chaque consultation ou telechargement.
+
+Maivou fournit les sections, groupes, libelles et `display_value` destines a
+l'affichage. WordPress ne reconstruit pas ces libelles et ne conserve aucun
+cache de catalogues pour la consultation ou le PDF.
 
 ### Synchronisation des lots finalises
 
@@ -120,7 +131,7 @@ Aucune page de liste basee sur les requests n'est creee.
 
 - `[apa_agadev_form]` : affiche le formulaire APA filtre et transmet la demande.
 - `[apa_agadev_form role="chercheur"]` : demande le catalogue correspondant au role indique, sous reserve des permissions Maivou.
-- `[apa_agadev_agreements]` : affiche les accords visibles par l'utilisateur connecte.
+- `[apa_agadev_agreements]` : affiche, consulte et exporte en PDF les accords visibles par l'utilisateur connecte.
 
 L'ancien shortcode `[apa_agadev_public_lots]` n'est plus enregistre. Les lots sont accessibles uniquement par leur fiche individuelle.
 
@@ -129,6 +140,7 @@ L'ancien shortcode `[apa_agadev_public_lots]` n'est plus enregistre. Les lots so
 - `POST /api/_catalog` : recuperation du formulaire filtre avec la cle `agreement`.
 - `POST /api/agreements` : creation d'une demande APA.
 - `GET /api/agreements` : consultation des accords visibles.
+- `GET /api/agreements/{agreement}` : consultation complete et export PDF d'un accord autorise.
 - `GET /api/machine/lots` : synchronisation paginee des lots finalises.
 
 ## Release automatique via GitHub Actions

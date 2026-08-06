@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.15
+Stable tag: 2026.7.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,7 @@ Le plugin permet :
 * de recuperer le formulaire APA filtre pour l'utilisateur connecte ;
 * de transmettre une demande APA a Maivou ;
 * d'afficher les accords visibles par l'utilisateur ;
+* de consulter le contenu complet d'une demande et de le telecharger en PDF ;
 * de synchroniser localement les lots `sold` et `cancelled` ayant une request associee ;
 * d'exposer chaque lot finalise sur une fiche publique `/lot/{code}/`.
 
@@ -90,6 +91,15 @@ sa mediatheque.
 1. Le plugin appelle `GET /api/agreements`.
 2. Maivou applique l'authentification, les permissions et la visibilite du compte.
 3. Le plugin restitue uniquement les accords renvoyes par l'API.
+4. L'action `Consulter` appelle `GET /api/agreements/{agreement}` et affiche la structure `presentation` fournie par Maivou.
+5. L'action `PDF` genere a la demande un document A4 a partir du meme detail autorise.
+
+Le PDF n'est pas stocke dans WordPress. Son lien est reserve a l'utilisateur
+connecte, protege par un nonce WordPress et soumis aux autorisations Maivou.
+
+Maivou fournit les sections, groupes, libelles et `display_value` destines a
+l'affichage. WordPress ne reconstruit pas ces libelles et ne conserve aucun
+cache de catalogues pour la consultation ou le PDF.
 
 = Synchronisation des lots finalises =
 
@@ -135,7 +145,7 @@ WordPress retourne une erreur 404 explicite.
 
 * `[apa_agadev_form]` : affiche le formulaire APA filtre et transmet la demande.
 * `[apa_agadev_form role="chercheur"]` : demande a Maivou le catalogue correspondant au role indique ; son utilisation reste soumise aux autorisations de l'API.
-* `[apa_agadev_agreements]` : affiche les accords APA visibles par l'utilisateur connecte.
+* `[apa_agadev_agreements]` : affiche, consulte et exporte en PDF les accords APA visibles par l'utilisateur connecte.
 
 Il n'existe plus de shortcode de liste de lots. L'ancien shortcode
 `[apa_agadev_public_lots]` n'est plus enregistre.
@@ -145,6 +155,7 @@ Il n'existe plus de shortcode de liste de lots. L'ancien shortcode
 * `POST /api/_catalog` : recuperation du formulaire filtre avec la cle `agreement` ;
 * `POST /api/agreements` : creation d'une demande APA ;
 * `GET /api/agreements` : consultation des accords visibles ;
+* `GET /api/agreements/{agreement}` : consultation complete et export PDF d'un accord autorise ;
 * `GET /api/machine/lots` : synchronisation paginee des lots finalises.
 
 Les erreurs HTTP et les reponses invalides de Maivou sont affichees ou stockees
@@ -213,6 +224,13 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.17 =
+* Harmonisation des marqueurs numerotes de la navigation et des en-tetes de sections APA.
+
+= 2026.7.16 =
+* Consultation des demandes APA longues avec navigation laterale par sections et affichage responsive.
+* Correction du badge numerote des sections et invalidation du cache des styles.
 
 = 2026.7.15 =
 * Navigation simplifiee : chaque section Maivou constitue une etape et affiche toutes ses sous-sections autorisees.
