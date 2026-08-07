@@ -122,21 +122,34 @@ final class AgreementPdfService
         $dompdf->loadHtml($this->renderTemplate($detail), 'UTF-8');
         $dompdf->render();
         $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+        $boldFont = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'bold');
+        $reference = trim((string) ($detail['code'] ?? ''));
+        $reference = $reference !== '' ? $reference : __('Demande APA', 'plugin-apa-agadev');
+        $footerColor = [0.31, 0.37, 0.33];
+
         $dompdf->getCanvas()->page_text(
-            180,
+            34,
             806,
-            __('Document généré depuis Maivou via APA Agadev', 'plugin-apa-agadev'),
-            $font,
-            8,
-            [0.41, 0.46, 0.43]
+            sprintf(__('Référence : %s', 'plugin-apa-agadev'), $reference),
+            $boldFont,
+            7.5,
+            $footerColor
         );
         $dompdf->getCanvas()->page_text(
-            480,
+            215,
+            806,
+            __('Document généré depuis les données Maivou', 'plugin-apa-agadev'),
+            $font,
+            7.5,
+            $footerColor
+        );
+        $dompdf->getCanvas()->page_text(
+            500,
             806,
             __('Page {PAGE_NUM} / {PAGE_COUNT}', 'plugin-apa-agadev'),
-            $font,
-            8,
-            [0.41, 0.46, 0.43]
+            $boldFont,
+            7.5,
+            $footerColor
         );
         $pdf = $dompdf->output();
 
@@ -162,10 +175,31 @@ final class AgreementPdfService
         }
 
         $agreement_detail = $detail;
+        $brand_logo_data_uri = $this->brandLogoDataUri();
         ob_start();
         require $path;
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * Embeds the local logo so PDF generation never depends on a public URL.
+     */
+    private function brandLogoDataUri(): string
+    {
+        $path = PLUGIN_APA_AGADEV_PATH . 'assets/images/logo-agadev.svg';
+
+        if (! is_readable($path)) {
+            throw new UnexpectedValueException('The AGADEV logo is unavailable.');
+        }
+
+        $contents = file_get_contents($path);
+
+        if (! is_string($contents) || trim($contents) === '') {
+            throw new UnexpectedValueException('The AGADEV logo is empty.');
+        }
+
+        return 'data:image/svg+xml;base64,' . base64_encode($contents);
     }
 
     private function logInvalidPresentation(int $agreementId, UnexpectedValueException $exception): void

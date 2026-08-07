@@ -100,6 +100,31 @@ final class AgreementPdfServiceTest extends TestCase
         self::assertStringNotContainsString('00000000-0000-4000-8000-000000000301', $pdf);
     }
 
+    public function testPdfTemplateEmbedsTheLocalAgadevLogo(): void
+    {
+        $service = new AgreementPdfService(new MaivouDataService());
+        $detail = [
+            'code' => 'APA-2026-0042',
+            'status_label' => 'En attente',
+            'holder' => 'Alex Saba',
+            'sections' => [],
+        ];
+
+        // Call the private renderer in its own class scope without changing production visibility.
+        $html = (function (array $agreementDetail): string {
+            return $this->renderTemplate($agreementDetail);
+        })->call($service, $detail);
+
+        self::assertIsString($html);
+        self::assertStringContainsString('data:image/svg+xml;base64,', $html);
+        self::assertStringContainsString('alt="Logo AGADEV"', $html);
+        self::assertStringContainsString('Agence Gabonaise pour le Développement de l’Économie Verte', $html);
+        self::assertStringContainsString('Document de synthèse', $html);
+        self::assertStringContainsString('Référence du dossier : APA-2026-0042', $html);
+        self::assertStringContainsString('Informations du dossier', $html);
+        self::assertStringNotContainsString('MAIVOU <span', $html);
+    }
+
     public function testDownloadRejectsAnonymousUsersBeforeCallingMaivou(): void
     {
         $_GET = ['apa_agadev_download' => '1'];
