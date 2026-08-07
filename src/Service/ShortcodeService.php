@@ -461,7 +461,7 @@ final class ShortcodeService
     }
 
     /**
-     * Builds only fields declared by Maivou's filtered catalog.
+     * Builds fields declared by Maivou's filtered catalog and submits them.
      *
      * @param array<string, mixed> $submitted
      * @param array<string, mixed> $catalog
@@ -504,6 +504,10 @@ final class ShortcodeService
                 $payload[$section_key] = $normalized;
             }
         }
+
+        // The WordPress action is a final submission, not a progressive draft.
+        // Set this server-side so the browser cannot choose another workflow state.
+        $payload['status'] = 'pending';
 
         return $payload;
     }
