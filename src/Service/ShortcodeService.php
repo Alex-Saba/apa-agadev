@@ -59,29 +59,59 @@ final class ShortcodeService
 
         $submitted = [];
         $submission = null;
+        $submissionIntent = '';
+        $editingAgreementId = $this->requestedEditingAgreementId();
 
         if ($this->isAgreementSubmission()) {
             $submitted = $this->submittedAgreement();
+            $editingAgreementId = $this->submittedAgreementId();
+            $submissionIntent = $this->submissionIntent();
 
             if (! $this->hasValidNonce()) {
-                $submission = [
-                    'ok' => false,
-                    'status' => 403,
-                    'error' => __('La session du formulaire a expiré. Rechargez la page et réessayez.', 'plugin-apa-agadev'),
-                ];
+                $submission = $this->submissionError(
+                    403,
+                    __('La session du formulaire a expiré. Rechargez la page et réessayez.', 'plugin-apa-agadev')
+                );
+            } elseif ('' === $submissionIntent) {
+                $submission = $this->submissionError(
+                    400,
+                    __('L’action demandée pour ce formulaire APA est invalide.', 'plugin-apa-agadev')
+                );
             } else {
-                $payload = $this->normalizeAgreement($submitted, $catalog);
+                $payload = $this->normalizeAgreement(
+                    $submitted,
+                    $catalog,
+                    $submissionIntent,
+                    $editingAgreementId > 0
+                );
                 $documents = $this->submittedDocuments($catalog);
 
                 if (! $documents['ok']) {
-                    $submission = [
-                        'ok' => false,
-                        'status' => 422,
-                        'data' => null,
-                        'headers' => [],
-                        'set_cookie' => [],
-                        'error' => $documents['error'],
-                    ];
+                    $submission = $this->submissionError(422, $documents['error']);
+                } elseif ($editingAgreementId > 0 && $documents['files'] !== []) {
+                    $submission = $this->submissionError(
+                        422,
+                        __('Maivou ne permet pas encore de remplacer un document lors de la modification d’un brouillon.', 'plugin-apa-agadev')
+                    );
+                } elseif ($editingAgreementId > 0) {
+                    $draftResponse = $this->data->getAgreement($editingAgreementId);
+
+                    if (! $draftResponse['ok'] || ! is_array($draftResponse['data'])) {
+                        $submission = $this->submissionError(
+                            (int) ($draftResponse['status'] ?? 502),
+                            (string) ($draftResponse['error'] ?? __('Impossible de récupérer ce brouillon APA.', 'plugin-apa-agadev'))
+                        );
+                    } elseif ('draft' !== strtolower((string) ($draftResponse['data']['status'] ?? ''))) {
+                        $submission = $this->submissionError(
+                            409,
+                            __('Seule une demande APA en brouillon peut être modifiée.', 'plugin-apa-agadev')
+                        );
+                    } else {
+                        // File inputs cannot be prefilled by browsers. Preserve their
+                        // authenticated Maivou references while updating other fields.
+                        $payload = $this->preserveDocumentValues($payload, $draftResponse['data'], $catalog);
+                        $submission = $this->data->updateAgreement($editingAgreementId, $payload);
+                    }
                 } else {
                     $submission = $this->data->createAgreement(
                         $payload,
@@ -92,7 +122,25 @@ final class ShortcodeService
 
                 if ($submission['ok']) {
                     $submitted = [];
+                    $editingAgreementId = 0;
                 }
+            }
+        } elseif ($editingAgreementId > 0) {
+            $draftResponse = $this->data->getAgreement($editingAgreementId);
+
+            if (! $draftResponse['ok'] || ! is_array($draftResponse['data'])) {
+                $submission = $this->submissionError(
+                    (int) ($draftResponse['status'] ?? 502),
+                    (string) ($draftResponse['error'] ?? __('Impossible de récupérer ce brouillon APA.', 'plugin-apa-agadev'))
+                );
+            } elseif ('draft' !== strtolower((string) ($draftResponse['data']['status'] ?? ''))) {
+                $submission = $this->submissionError(
+                    409,
+                    __('Seule une demande APA en brouillon peut être modifiée.', 'plugin-apa-agadev')
+                );
+                $editingAgreementId = 0;
+            } else {
+                $submitted = $this->agreementFormValues($draftResponse['data'], $catalog);
             }
         }
 
@@ -101,6 +149,8 @@ final class ShortcodeService
             'remote_options' => $remoteOptions,
             'submitted' => $submitted,
             'submission' => $submission,
+            'submission_intent' => $submissionIntent,
+            'editing_agreement_id' => $editingAgreementId,
             'layout' => $layout,
         ]);
     }
@@ -145,7 +195,8 @@ final class ShortcodeService
             'agreements' => $agreements,
             'agreements_error' => $agreements_error,
             'form' => $form,
-            'open_modal' => $this->isAgreementSubmission(),
+            'open_modal' => $this->isAgreementSubmission() || $this->requestedEditingAgreementId() > 0,
+            'editing_agreement_id' => $this->requestedEditingAgreementId(),
             'agreement_detail' => $detail,
         ]);
     }
@@ -201,13 +252,60 @@ final class ShortcodeService
     }
 
     /**
+     * Reads the draft selected for editing from the agreement list.
+     */
+    private function requestedEditingAgreementId(): int
+    {
+        if (! isset($_GET['apa_agadev_edit_agreement']) || ! is_scalar($_GET['apa_agadev_edit_agreement'])) {
+            return 0;
+        }
+
+        return absint(wp_unslash((string) $_GET['apa_agadev_edit_agreement']));
+    }
+
+    /**
+     * Reads the draft identifier posted by the plugin form.
+     */
+    private function submittedAgreementId(): int
+    {
+        if (! isset($_POST['apa_agadev_agreement_id']) || ! is_scalar($_POST['apa_agadev_agreement_id'])) {
+            return 0;
+        }
+
+        return absint(wp_unslash((string) $_POST['apa_agadev_agreement_id']));
+    }
+
+    /**
      * Identifies only submissions owned by this shortcode.
      */
     private function isAgreementSubmission(): bool
     {
         return isset($_SERVER['REQUEST_METHOD'], $_POST['apa_agadev_action'])
             && 'POST' === strtoupper(sanitize_text_field(wp_unslash((string) $_SERVER['REQUEST_METHOD'])))
-            && 'create_agreement' === sanitize_key(wp_unslash((string) $_POST['apa_agadev_action']));
+            && in_array(
+                sanitize_key(wp_unslash((string) $_POST['apa_agadev_action'])),
+                ['create_agreement', 'save_agreement'],
+                true
+            );
+    }
+
+    /**
+     * Accepts only the two workflow decisions exposed by the form.
+     */
+    private function submissionIntent(): string
+    {
+        if (! isset($_POST['apa_agadev_submission_intent'])) {
+            // Backward compatibility for a form cached before draft support.
+            return 'pending';
+        }
+
+        if (! is_scalar($_POST['apa_agadev_submission_intent'])) {
+            return '';
+        }
+
+        $intent = sanitize_key(wp_unslash((string) $_POST['apa_agadev_submission_intent']));
+
+        return in_array($intent, ['draft', 'pending'], true) ? $intent : '';
     }
 
     /**
@@ -461,13 +559,172 @@ final class ShortcodeService
     }
 
     /**
-     * Builds fields declared by Maivou's filtered catalog and submits them.
+     * Builds the response shape consumed by the agreement form template.
+     *
+     * @return array{ok:false,status:int,data:null,headers:array,set_cookie:array,error:string}
+     */
+    private function submissionError(int $status, string $message): array
+    {
+        return [
+            'ok' => false,
+            'status' => $status,
+            'data' => null,
+            'headers' => [],
+            'set_cookie' => [],
+            'error' => $message,
+        ];
+    }
+
+    /**
+     * Keeps only role-filtered form sections from an authorized draft payload.
+     *
+     * @param array<string, mixed> $agreement
+     * @param array<string, mixed> $catalog
+     * @return array<string, mixed>
+     */
+    private function agreementFormValues(array $agreement, array $catalog): array
+    {
+        $values = [];
+        $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
+
+        foreach ($sections as $sectionKey => $section) {
+            if (is_string($sectionKey) && is_array($section) && is_array($agreement[$sectionKey] ?? null)) {
+                $values[$sectionKey] = $agreement[$sectionKey];
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Preserves stored file references that browsers cannot place back into a
+     * file input when a draft is reopened.
+     *
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $existing
+     * @param array<string, mixed> $catalog
+     * @return array<string, mixed>
+     */
+    private function preserveDocumentValues(array $payload, array $existing, array $catalog): array
+    {
+        $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
+
+        foreach ($sections as $sectionKey => $section) {
+            if (! is_string($sectionKey) || ! is_array($section) || ! is_array($payload[$sectionKey] ?? null)) {
+                continue;
+            }
+
+            $existingSection = is_array($existing[$sectionKey] ?? null) ? $existing[$sectionKey] : [];
+            $payload[$sectionKey] = $this->preserveDefinedDocuments(
+                $payload[$sectionKey],
+                $existingSection,
+                $section['fields'] ?? []
+            );
+
+            foreach ((array) ($section['subsections'] ?? []) as $subsectionKey => $subsection) {
+                if (! is_array($subsection)) {
+                    continue;
+                }
+
+                $payload[$sectionKey] = $this->preserveDefinedDocuments(
+                    $payload[$sectionKey],
+                    $existingSection,
+                    $subsection['fields'] ?? []
+                );
+
+                if (! is_string($subsectionKey) || ! is_array($subsection['benefits'] ?? null)) {
+                    continue;
+                }
+
+                foreach ($subsection['benefits'] as $benefitKey => $benefit) {
+                    if (
+                        ! is_string($benefitKey)
+                        || ! is_array($benefit)
+                        || ! is_array($payload[$sectionKey][$subsectionKey][$benefitKey] ?? null)
+                    ) {
+                        continue;
+                    }
+
+                    $existingBenefit = is_array($existingSection[$subsectionKey][$benefitKey] ?? null)
+                        ? $existingSection[$subsectionKey][$benefitKey]
+                        : [];
+                    $payload[$sectionKey][$subsectionKey][$benefitKey] = $this->preserveDefinedDocuments(
+                        $payload[$sectionKey][$subsectionKey][$benefitKey],
+                        $existingBenefit,
+                        $benefit['fields'] ?? []
+                    );
+                }
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $existing
+     * @param mixed $definitions
+     * @return array<string, mixed>
+     */
+    private function preserveDefinedDocuments(array $payload, array $existing, $definitions): array
+    {
+        if (! is_array($definitions)) {
+            return $payload;
+        }
+
+        foreach ($definitions as $key => $definition) {
+            if (! is_string($key) || ! is_array($definition)) {
+                continue;
+            }
+
+            if ($this->isList($definition)) {
+                $definition = is_array($definition[0] ?? null) ? $definition[0] : [];
+            }
+
+            $type = (string) ($definition['type'] ?? 'text');
+
+            if (in_array($type, ['file', 'dropzone'], true)) {
+                if (! array_key_exists($key, $payload) && array_key_exists($key, $existing)) {
+                    $payload[$key] = $existing[$key];
+                }
+
+                continue;
+            }
+
+            if ('repeater' !== $type || ! is_array($payload[$key] ?? null) || ! is_array($existing[$key] ?? null)) {
+                continue;
+            }
+
+            foreach ($payload[$key] as $rowIndex => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $existingRow = is_array($existing[$key][$rowIndex] ?? null) ? $existing[$key][$rowIndex] : [];
+                $payload[$key][$rowIndex] = $this->preserveDefinedDocuments(
+                    $row,
+                    $existingRow,
+                    $definition['fields'] ?? []
+                );
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Builds fields declared by Maivou's filtered catalog for one workflow state.
      *
      * @param array<string, mixed> $submitted
      * @param array<string, mixed> $catalog
      * @return array<string, mixed>
      */
-    private function normalizeAgreement(array $submitted, array $catalog): array
+    private function normalizeAgreement(
+        array $submitted,
+        array $catalog,
+        string $status,
+        bool $includeEmpty = false
+    ): array
     {
         $payload = [];
         $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
@@ -478,7 +735,7 @@ final class ShortcodeService
             }
 
             $raw_section = is_array($submitted[$section_key] ?? null) ? $submitted[$section_key] : [];
-            $normalized = $this->normalizeFields($raw_section, $section['fields'] ?? []);
+            $normalized = $this->normalizeFields($raw_section, $section['fields'] ?? [], $includeEmpty);
             $subsections = is_array($section['subsections'] ?? null) ? $section['subsections'] : [];
 
             foreach ($subsections as $subsection_key => $subsection) {
@@ -486,12 +743,13 @@ final class ShortcodeService
                     continue;
                 }
 
-                $normalized += $this->normalizeFields($raw_section, $subsection['fields'] ?? []);
+                $normalized += $this->normalizeFields($raw_section, $subsection['fields'] ?? [], $includeEmpty);
 
                 if (is_string($subsection_key) && is_array($subsection['benefits'] ?? null)) {
                     $benefits = $this->normalizeBenefits(
                         is_array($raw_section[$subsection_key] ?? null) ? $raw_section[$subsection_key] : [],
-                        $subsection['benefits']
+                        $subsection['benefits'],
+                        $includeEmpty
                     );
 
                     if ($benefits !== []) {
@@ -505,9 +763,8 @@ final class ShortcodeService
             }
         }
 
-        // The WordPress action is a final submission, not a progressive draft.
-        // Set this server-side so the browser cannot choose another workflow state.
-        $payload['status'] = 'pending';
+        // The caller already reduced the browser input to the explicit allowlist.
+        $payload['status'] = $status;
 
         return $payload;
     }
@@ -518,7 +775,7 @@ final class ShortcodeService
      * @param mixed $definitions
      * @return array<string, mixed>
      */
-    private function normalizeFields(array $submitted, $definitions): array
+    private function normalizeFields(array $submitted, $definitions, bool $includeEmpty = false): array
     {
         if (! is_array($definitions)) {
             return [];
@@ -547,7 +804,7 @@ final class ShortcodeService
                             continue;
                         }
 
-                        $normalized_row = $this->normalizeFields($row, $definition['fields'] ?? []);
+                        $normalized_row = $this->normalizeFields($row, $definition['fields'] ?? [], $includeEmpty);
                         if (! $this->isEmptyValue($normalized_row)) {
                             $rows[] = $normalized_row;
                         }
@@ -556,6 +813,8 @@ final class ShortcodeService
 
                 if ($rows !== []) {
                     $normalized[$key] = $rows;
+                } elseif ($includeEmpty && array_key_exists($key, $submitted)) {
+                    $normalized[$key] = [];
                 }
 
                 continue;
@@ -567,6 +826,9 @@ final class ShortcodeService
 
             if ('number' === $type) {
                 if (! is_numeric($raw)) {
+                    if ($includeEmpty && array_key_exists($key, $submitted)) {
+                        $normalized[$key] = null;
+                    }
                     continue;
                 }
 
@@ -588,12 +850,17 @@ final class ShortcodeService
 
                 if ($values !== []) {
                     $normalized[$key] = $values;
+                } elseif ($includeEmpty && array_key_exists($key, $submitted)) {
+                    $normalized[$key] = [];
                 }
 
                 continue;
             }
 
             if (null === $raw || is_array($raw)) {
+                if ($includeEmpty && array_key_exists($key, $submitted) && null === $raw) {
+                    $normalized[$key] = null;
+                }
                 continue;
             }
 
@@ -603,6 +870,8 @@ final class ShortcodeService
 
             if ('' !== $value) {
                 $normalized[$key] = $value;
+            } elseif ($includeEmpty) {
+                $normalized[$key] = null;
             }
         }
 
@@ -616,7 +885,7 @@ final class ShortcodeService
      * @param array<string, mixed> $definitions
      * @return array<string, mixed>
      */
-    private function normalizeBenefits(array $submitted, array $definitions): array
+    private function normalizeBenefits(array $submitted, array $definitions, bool $includeEmpty = false): array
     {
         $benefits = [];
 
@@ -626,9 +895,11 @@ final class ShortcodeService
             }
 
             $raw = is_array($submitted[$benefit_key] ?? null) ? $submitted[$benefit_key] : [];
-            $normalized = $this->normalizeFields($raw, $benefit['fields'] ?? []);
+            $normalized = $this->normalizeFields($raw, $benefit['fields'] ?? [], $includeEmpty);
 
             if (! $this->isEmptyValue($normalized)) {
+                $benefits[$benefit_key] = $normalized;
+            } elseif ($includeEmpty && array_key_exists($benefit_key, $submitted)) {
                 $benefits[$benefit_key] = $normalized;
             }
         }

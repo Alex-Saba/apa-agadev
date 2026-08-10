@@ -44,6 +44,23 @@
         }
     }
 
+    function clearEditingAgreementQuery() {
+        var currentUrl = new URL(window.location.href);
+
+        if (!currentUrl.searchParams.has('apa_agadev_edit_agreement')) {
+            return;
+        }
+
+        // The query parameter is only needed by PHP to preload the draft.
+        // Removing it after rendering prevents a browser refresh from reopening it.
+        currentUrl.searchParams.delete('apa_agadev_edit_agreement');
+        window.history.replaceState(
+            window.history.state,
+            '',
+            currentUrl.pathname + currentUrl.search + currentUrl.hash
+        );
+    }
+
     function fieldSummaryValue(field) {
         var controls = Array.prototype.slice.call(
             field.querySelectorAll('input:not([type="hidden"]), select, textarea')
@@ -486,6 +503,14 @@
 
         var steps = Array.prototype.slice.call(form.querySelectorAll('[data-apa-step]'));
         var currentIndex = Number(form.dataset.apaCurrentStep || 0);
+        var submitter = event.submitter || document.activeElement;
+        var savesDraft = Boolean(submitter && submitter.matches('[data-apa-save-draft]'));
+
+        // A draft is intentionally allowed from any section and may be incomplete.
+        if (savesDraft) {
+            prepareFileSubmission(form);
+            return;
+        }
 
         // Pressing Enter behaves like “Continuer” until the final step.
         if (currentIndex < steps.length - 1) {
@@ -528,6 +553,8 @@
 
         document.querySelectorAll('[data-apa-modal-initial-open]').forEach(function (modal) {
             openAgreementModal(modal, null, false);
+            modal.removeAttribute('data-apa-modal-initial-open');
+            clearEditingAgreementQuery();
         });
     }
 

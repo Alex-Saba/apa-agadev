@@ -6,6 +6,7 @@
  * @var string $agreements_error
  * @var string $form
  * @var bool $open_modal
+ * @var int $editing_agreement_id
  * @var string $agreement_detail
  */
 
@@ -78,7 +79,7 @@ $format_date = static function ($value): string {
                         <th scope="col"><?php esc_html_e('Début de validité', 'plugin-apa-agadev'); ?></th>
                         <th scope="col"><?php esc_html_e('Fin de validité', 'plugin-apa-agadev'); ?></th>
                         <th scope="col"><?php esc_html_e('Statut', 'plugin-apa-agadev'); ?></th>
-                        <th scope="col"><span class="screen-reader-text"><?php esc_html_e('Actions', 'plugin-apa-agadev'); ?></span></th>
+                        <th scope="col" class="acl_shortcode_agreements_actions_heading"><?php esc_html_e('Actions', 'plugin-apa-agadev'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,6 +97,10 @@ $format_date = static function ($value): string {
                             'apa_agadev_agreement' => (int) ($agreement['id'] ?? 0),
                         ], get_permalink());
                         $download_url = \PluginApaAgadev\Service\AgreementPdfService::downloadUrl((int) ($agreement['id'] ?? 0));
+                        $edit_url = (string) add_query_arg([
+                            'view' => 'agrements',
+                            'apa_agadev_edit_agreement' => (int) ($agreement['id'] ?? 0),
+                        ], get_permalink());
                         $end_timestamp = isset($agreement['ends_at']) && is_string($agreement['ends_at'])
                             ? strtotime($agreement['ends_at'])
                             : false;
@@ -113,8 +118,17 @@ $format_date = static function ($value): string {
                             <td><?php echo esc_html($format_date($agreement['ends_at'] ?? null)); ?></td>
                             <td><span class="acl_shortcode_agreements_status acl_shortcode_agreements_status--<?php echo esc_attr(sanitize_html_class($status_class ?: 'unknown')); ?>"><?php echo esc_html($status_label); ?></span></td>
                             <td class="acl_shortcode_agreements_actions">
-                                <a href="<?php echo esc_url($detail_url); ?>"><?php esc_html_e('Consulter', 'plugin-apa-agadev'); ?></a>
-                                <a href="<?php echo esc_url($download_url); ?>"><?php esc_html_e('PDF', 'plugin-apa-agadev'); ?></a>
+                                <?php if ('draft' === $status) : ?>
+                                    <a class="acl_shortcode_agreements_action" href="<?php echo esc_url($edit_url); ?>" aria-label="<?php esc_attr_e('Modifier le brouillon', 'plugin-apa-agadev'); ?>" title="<?php esc_attr_e('Modifier', 'plugin-apa-agadev'); ?>" data-tooltip="<?php esc_attr_e('Modifier', 'plugin-apa-agadev'); ?>">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg>
+                                    </a>
+                                <?php endif; ?>
+                                <a class="acl_shortcode_agreements_action" href="<?php echo esc_url($detail_url); ?>" aria-label="<?php esc_attr_e('Consulter la demande', 'plugin-apa-agadev'); ?>" title="<?php esc_attr_e('Consulter', 'plugin-apa-agadev'); ?>" data-tooltip="<?php esc_attr_e('Consulter', 'plugin-apa-agadev'); ?>">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                </a>
+                                <a class="acl_shortcode_agreements_action" href="<?php echo esc_url($download_url); ?>" aria-label="<?php esc_attr_e('Télécharger le PDF', 'plugin-apa-agadev'); ?>" title="<?php esc_attr_e('Télécharger le PDF', 'plugin-apa-agadev'); ?>" data-tooltip="<?php esc_attr_e('Télécharger le PDF', 'plugin-apa-agadev'); ?>">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M12 11v7"></path><path d="m9 15 3 3 3-3"></path></svg>
+                                </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -144,7 +158,11 @@ $format_date = static function ($value): string {
         <header class="acl_shortcode_agreement_modal_header acl_shortcode_div">
             <div class="acl_shortcode_div">
                 <span class="acl_shortcode_agreement_modal_eyebrow"><?php esc_html_e('Demande APA', 'plugin-apa-agadev'); ?></span>
-                <h2 id="<?php echo esc_attr($modal_id); ?>-title" class="acl_shortcode_agreement_modal_title acl_shortcode_h2"><?php esc_html_e('Ajouter un agrément', 'plugin-apa-agadev'); ?></h2>
+                <h2 id="<?php echo esc_attr($modal_id); ?>-title" class="acl_shortcode_agreement_modal_title acl_shortcode_h2">
+                    <?php echo ! empty($editing_agreement_id)
+                        ? esc_html__('Modifier mon brouillon', 'plugin-apa-agadev')
+                        : esc_html__('Ajouter un agrément', 'plugin-apa-agadev'); ?>
+                </h2>
             </div>
             <button type="button" class="acl_shortcode_agreement_modal_close acl_shortcode_button_button" data-apa-agreement-modal-close aria-label="<?php esc_attr_e('Fermer le formulaire', 'plugin-apa-agadev'); ?>">&times;</button>
         </header>

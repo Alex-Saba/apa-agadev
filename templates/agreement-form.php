@@ -6,6 +6,8 @@
  * @var array<string, mixed> $remote_options
  * @var array<string, mixed> $submitted
  * @var array<string, mixed>|null $submission
+ * @var string $submission_intent
+ * @var int $editing_agreement_id
  * @var string $layout
  */
 if (! defined('ABSPATH')) {
@@ -15,6 +17,9 @@ if (! defined('ABSPATH')) {
 $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
 $is_modal_layout = isset($layout) && 'modal' === $layout;
 $submission_succeeded = is_array($submission) && ! empty($submission['ok']);
+$successful_intent = isset($submission_intent) ? (string) $submission_intent : '';
+$editing_agreement_id = isset($editing_agreement_id) ? max(0, (int) $editing_agreement_id) : 0;
+$is_editing = $editing_agreement_id > 0;
 $section_groups = [];
 $steps = [];
 
@@ -175,6 +180,7 @@ $render_input = static function (
             </label>
         <?php elseif (in_array($type, ['file', 'dropzone'], true)) : ?>
             <?php $allows_multiple_files = 'dropzone' === $type; ?>
+            <?php $has_existing_file = is_array($value) ? $value !== [] : is_scalar($value) && '' !== trim((string) $value); ?>
             <div class="acl_shortcode_apa_dropzone acl_shortcode_div" data-apa-dropzone>
                 <input
                     class="acl_shortcode_apa_file_input"
@@ -185,11 +191,18 @@ $render_input = static function (
                     data-apa-file-input
                     data-apa-file-path="<?php echo esc_attr($name); ?>"
                     <?php echo $allows_multiple_files ? ' multiple' : ''; ?>
-                    <?php echo $required ? ' required' : ''; ?>
+                    <?php echo $required && ! $has_existing_file ? ' required' : ''; ?>
                 >
                 <strong><?php esc_html_e('Faites glisser le fichier ici', 'plugin-apa-agadev'); ?></strong>
-                <span data-apa-file-summary><?php esc_html_e('ou cliquez pour sélectionner un fichier', 'plugin-apa-agadev'); ?></span>
+                <span data-apa-file-summary>
+                    <?php echo $has_existing_file
+                        ? esc_html__('Un document est déjà enregistré dans ce brouillon.', 'plugin-apa-agadev')
+                        : esc_html__('ou cliquez pour sélectionner un fichier', 'plugin-apa-agadev'); ?>
+                </span>
                 <small><?php esc_html_e('PDF, JPG ou PNG — 5 Mo maximum par fichier.', 'plugin-apa-agadev'); ?></small>
+                <?php if ($has_existing_file) : ?>
+                    <small class="acl_shortcode_apa_existing_document"><?php esc_html_e('Le document existant sera conservé. Son remplacement n’est pas encore disponible.', 'plugin-apa-agadev'); ?></small>
+                <?php endif; ?>
             </div>
         <?php else : ?>
             <?php $html_type = in_array($type, ['date', 'email', 'number'], true) ? $type : 'text'; ?>
@@ -313,7 +326,11 @@ $render_benefits = static function (
 <article class="acl_shortcode_form acl_shortcode_article acl_shortcode_apa_form<?php echo $is_modal_layout ? ' acl_shortcode_apa_form--modal' : ''; ?><?php echo $submission_succeeded ? ' acl_shortcode_apa_form--success' : ''; ?>">
     <?php if ($submission_succeeded) : ?>
         <div class="acl_shortcode_notice acl_shortcode_notice--success acl_shortcode_div" role="status">
-            <?php esc_html_e('Votre demande APA a bien été transmise à Maivou.', 'plugin-apa-agadev'); ?>
+            <?php if ('draft' === $successful_intent) : ?>
+                <?php esc_html_e('Votre brouillon APA a bien été enregistré dans Maivou.', 'plugin-apa-agadev'); ?>
+            <?php else : ?>
+                <?php esc_html_e('Votre demande APA a bien été transmise à Maivou.', 'plugin-apa-agadev'); ?>
+            <?php endif; ?>
         </div>
     <?php elseif (is_array($submission)) : ?>
         <div class="acl_shortcode_notice acl_shortcode_notice--error acl_shortcode_div" role="alert">
@@ -334,7 +351,10 @@ $render_benefits = static function (
     <?php elseif (! $submission_succeeded) : ?>
         <form method="post" enctype="multipart/form-data" class="acl_shortcode_sections acl_shortcode_div" data-apa-step-form>
             <?php wp_nonce_field('apa_agadev_create_agreement', 'apa_agadev_nonce'); ?>
-            <input type="hidden" name="apa_agadev_action" value="create_agreement">
+            <input type="hidden" name="apa_agadev_action" value="save_agreement">
+            <?php if ($is_editing) : ?>
+                <input type="hidden" name="apa_agadev_agreement_id" value="<?php echo esc_attr((string) $editing_agreement_id); ?>">
+            <?php endif; ?>
             <div class="screen-reader-text" data-apa-form-status aria-live="polite"></div>
 
             <?php foreach ($steps as $step_index => $step) : ?>
@@ -395,6 +415,7 @@ $render_benefits = static function (
                         <?php if (! $is_first_step) : ?>
                             <button type="button" class="acl_shortcode_btn acl_shortcode_button_button" data-apa-step-previous><?php esc_html_e('Retour', 'plugin-apa-agadev'); ?></button>
                         <?php endif; ?>
+                        <button type="submit" name="apa_agadev_submission_intent" value="draft" class="acl_shortcode_btn acl_shortcode_button_button acl_shortcode_apa_save_draft" formnovalidate data-apa-save-draft><?php esc_html_e('Enregistrer le brouillon', 'plugin-apa-agadev'); ?></button>
                         <button type="button" class="acl_shortcode_submit acl_shortcode_button_submit" data-apa-step-next><?php echo esc_html($is_last_data_step ? __('Vérifier la demande', 'plugin-apa-agadev') : __('Continuer', 'plugin-apa-agadev')); ?></button>
                     </div>
                 </section>
@@ -423,7 +444,8 @@ $render_benefits = static function (
                 <div class="acl_shortcode_apa_review_summary" data-apa-review-summary></div>
                 <div class="acl_shortcode_actions acl_shortcode_apa_step_actions acl_shortcode_div">
                     <button type="button" class="acl_shortcode_btn acl_shortcode_button_button" data-apa-step-previous><?php esc_html_e('Modifier mes réponses', 'plugin-apa-agadev'); ?></button>
-                    <button type="submit" class="acl_shortcode_submit acl_shortcode_button_submit"><?php esc_html_e('Transmettre la demande APA', 'plugin-apa-agadev'); ?></button>
+                    <button type="submit" name="apa_agadev_submission_intent" value="draft" class="acl_shortcode_btn acl_shortcode_button_button acl_shortcode_apa_save_draft" formnovalidate data-apa-save-draft><?php esc_html_e('Enregistrer le brouillon', 'plugin-apa-agadev'); ?></button>
+                    <button type="submit" name="apa_agadev_submission_intent" value="pending" class="acl_shortcode_submit acl_shortcode_button_submit"><?php esc_html_e('Transmettre la demande APA', 'plugin-apa-agadev'); ?></button>
                 </div>
             </section>
         </form>

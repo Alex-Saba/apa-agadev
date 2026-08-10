@@ -729,6 +729,25 @@
     color: var(--apa-form-green);
 }
 
+.acl_shortcode_apa_step_actions .acl_shortcode_apa_save_draft {
+    background: #fff8f0;
+    border-color: var(--apa-form-accent);
+    color: #9b4a05;
+}
+
+.acl_shortcode_apa_step_actions .acl_shortcode_apa_save_draft:hover,
+.acl_shortcode_apa_step_actions .acl_shortcode_apa_save_draft:focus-visible {
+    background: #fff0df;
+    filter: none;
+}
+
+.acl_shortcode_apa_existing_document {
+    color: #dff3e7;
+    display: block;
+    font-weight: 700;
+    margin-top: 0.3rem;
+}
+
 @media (max-width: 900px) {
     .acl_shortcode_apa_portal {
         grid-template-columns: minmax(0, 1fr);
@@ -982,25 +1001,79 @@
 }
 
 .acl_shortcode_agreements_actions {
+    align-items: center;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     justify-content: flex-end;
     white-space: nowrap;
 }
 
-.acl_shortcode_agreements_actions a {
-    border: 1px solid #bed0c5;
-    border-radius: 0.45rem;
-    color: #11663a;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 0.42rem 0.65rem;
-    text-decoration: none;
+.acl_shortcode_agreements_actions_heading {
+    text-align: right !important;
 }
 
-.acl_shortcode_agreements_actions a:hover {
+.acl_shortcode_agreements_actions .acl_shortcode_agreements_action {
+    align-items: center;
+    border: 1px solid #bed0c5;
+    border-radius: 0.55rem;
+    box-sizing: border-box;
+    color: #11663a;
+    display: inline-flex;
+    height: 2.35rem;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    text-decoration: none;
+    width: 2.35rem;
+}
+
+.acl_shortcode_agreements_action svg {
+    fill: none;
+    height: 1.15rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 1.15rem;
+}
+
+.acl_shortcode_agreements_action::after {
+    background: #17251e;
+    border-radius: 0.35rem;
+    bottom: calc(100% + 0.45rem);
+    color: #fff;
+    content: attr(data-tooltip);
+    font-size: 0.7rem;
+    font-weight: 600;
+    left: 50%;
+    line-height: 1;
+    opacity: 0;
+    padding: 0.42rem 0.52rem;
+    pointer-events: none;
+    position: absolute;
+    transform: translate(-50%, 0.2rem);
+    transition: opacity 140ms ease, transform 140ms ease;
+    visibility: hidden;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+.acl_shortcode_agreements_actions .acl_shortcode_agreements_action:hover,
+.acl_shortcode_agreements_actions .acl_shortcode_agreements_action:focus-visible {
     background: #edf5f0;
     border-color: #11663a;
+}
+
+.acl_shortcode_agreements_action:hover::after,
+.acl_shortcode_agreements_action:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    visibility: visible;
+}
+
+.acl_shortcode_agreements_action:focus-visible {
+    outline: 3px solid rgba(220, 105, 7, 0.35);
+    outline-offset: 2px;
 }
 
 .acl_shortcode_agreement_detail {

@@ -62,6 +62,29 @@ final class MaivouDataService
     }
 
     /**
+     * Updates a draft APA agreement owned by the authenticated Maivou user.
+     *
+     * @param array<string, mixed> $agreement
+     * @return array{ok:bool,status:int,data:mixed,headers:array,set_cookie:array,error:?string}
+     */
+    public function updateAgreement(int $agreementId, array $agreement): array
+    {
+        if ($agreementId < 1) {
+            return $this->errorResponse(
+                400,
+                __('L’identifiant du brouillon APA est invalide.', 'plugin-apa-agadev')
+            );
+        }
+
+        return $this->call([
+            'endpoint' => '/agreements/' . $agreementId,
+            'method' => 'PUT',
+            'body' => $agreement,
+            'auth' => 'user',
+        ]);
+    }
+
+    /**
      * Loads the option collections referenced by the filtered catalog.
      *
      * Only endpoints returned by Maivou's trusted catalog are requested. The
