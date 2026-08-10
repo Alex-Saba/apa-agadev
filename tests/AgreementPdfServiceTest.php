@@ -119,9 +119,18 @@ final class AgreementPdfServiceTest extends TestCase
         self::assertStringContainsString('data:image/svg+xml;base64,', $html);
         self::assertStringContainsString('alt="Logo AGADEV"', $html);
         self::assertStringContainsString('Agence Gabonaise pour le Développement de l’Économie Verte', $html);
-        self::assertStringContainsString('Document de synthèse', $html);
+        self::assertStringContainsString('République Gabonaise · Union · Travail · Justice', $html);
+        self::assertStringContainsString('Document administratif', $html);
+        self::assertStringContainsString('Formulaire de demande APA', $html);
         self::assertStringContainsString('Référence du dossier : APA-2026-0042', $html);
         self::assertStringContainsString('Informations du dossier', $html);
+        self::assertStringContainsString('Type de demande', $html);
+        self::assertStringContainsString('Demande APA', $html);
+        self::assertStringContainsString('Les informations ci-dessus constituent la synthèse de la demande transmise.', $html);
+        self::assertStringContainsString('Cadre réservé à l’administration', $html);
+        self::assertStringContainsString('Recevabilité du dossier', $html);
+        self::assertStringContainsString('Nom et qualité de l’autorité compétente', $html);
+        self::assertStringContainsString('Authenticité du document', $html);
         self::assertStringNotContainsString('MAIVOU <span', $html);
     }
 

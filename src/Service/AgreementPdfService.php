@@ -123,31 +123,34 @@ final class AgreementPdfService
         $dompdf->render();
         $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
         $boldFont = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'bold');
-        $reference = trim((string) ($detail['code'] ?? ''));
-        $reference = $reference !== '' ? $reference : __('Demande APA', 'plugin-apa-agadev');
         $footerColor = [0.31, 0.37, 0.33];
+        $brandColor = [0.07, 0.24, 0.15];
+        $canvas = $dompdf->getCanvas();
 
-        $dompdf->getCanvas()->page_text(
-            34,
+        // The official document footer is repeated consistently on every page.
+        $canvas->line(42, 797, 553, 797, [0.77, 0.84, 0.79], 0.6);
+
+        $canvas->page_text(
+            42,
             806,
-            sprintf(__('Référence : %s', 'plugin-apa-agadev'), $reference),
+            __('MAIVOU  ·  DEMANDE APA', 'plugin-apa-agadev'),
             $boldFont,
             7.5,
-            $footerColor
+            $brandColor
         );
-        $dompdf->getCanvas()->page_text(
-            215,
+        $canvas->page_text(
+            202,
             806,
-            __('Document généré depuis les données Maivou', 'plugin-apa-agadev'),
+            __('Document généré depuis les données enregistrées', 'plugin-apa-agadev'),
             $font,
             7.5,
             $footerColor
         );
-        $dompdf->getCanvas()->page_text(
-            500,
+        $canvas->page_text(
+            520,
             806,
-            __('Page {PAGE_NUM} / {PAGE_COUNT}', 'plugin-apa-agadev'),
-            $boldFont,
+            __('Page {PAGE_NUM}', 'plugin-apa-agadev'),
+            $font,
             7.5,
             $footerColor
         );
