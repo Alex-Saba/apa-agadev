@@ -160,6 +160,9 @@ final class ShortcodeService
      */
     public function renderAgreements(): string
     {
+        $newAgreementRequest = $this->isNewAgreementRequest();
+        $editingAgreementId = $this->requestedEditingAgreementId();
+
         // Process a possible creation first so the refreshed list can include it.
         $form = $this->renderAgreementForm(['layout' => 'modal']);
         $agreementId = $this->requestedAgreementId();
@@ -195,8 +198,8 @@ final class ShortcodeService
             'agreements' => $agreements,
             'agreements_error' => $agreements_error,
             'form' => $form,
-            'open_modal' => $this->isAgreementSubmission() || $this->requestedEditingAgreementId() > 0,
-            'editing_agreement_id' => $this->requestedEditingAgreementId(),
+            'open_modal' => $this->isAgreementSubmission() || $newAgreementRequest || $editingAgreementId > 0,
+            'editing_agreement_id' => $editingAgreementId,
             'agreement_detail' => $detail,
         ]);
     }
@@ -256,11 +259,28 @@ final class ShortcodeService
      */
     private function requestedEditingAgreementId(): int
     {
+        // An explicit creation request must never inherit a stale editing query.
+        if ($this->isNewAgreementRequest()) {
+            return 0;
+        }
+
         if (! isset($_GET['apa_agadev_edit_agreement']) || ! is_scalar($_GET['apa_agadev_edit_agreement'])) {
             return 0;
         }
 
         return absint(wp_unslash((string) $_GET['apa_agadev_edit_agreement']));
+    }
+
+    /**
+     * Identifies an explicit request to start with a blank agreement form.
+     */
+    private function isNewAgreementRequest(): bool
+    {
+        if (! isset($_GET['apa_agadev_new_agreement']) || ! is_scalar($_GET['apa_agadev_new_agreement'])) {
+            return false;
+        }
+
+        return '1' === sanitize_text_field(wp_unslash((string) $_GET['apa_agadev_new_agreement']));
     }
 
     /**

@@ -10,8 +10,42 @@ final class AgreementSubmissionTest extends TestCase
 {
     protected function tearDown(): void
     {
+        $_GET = [];
         $_POST = [];
         unset($GLOBALS['apa_test_api_arguments'], $GLOBALS['apa_test_api_response']);
+    }
+
+    public function testNewAgreementRequestOverridesAStaleDraftQuery(): void
+    {
+        $_GET = [
+            'apa_agadev_edit_agreement' => '42',
+            'apa_agadev_new_agreement' => '1',
+        ];
+        $service = new ShortcodeService(new MaivouDataService());
+        $requestedEditingAgreementId = Closure::bind(
+            static fn (ShortcodeService $target): int => $target->requestedEditingAgreementId(),
+            null,
+            ShortcodeService::class
+        );
+
+        self::assertSame(0, $requestedEditingAgreementId($service));
+    }
+
+    public function testDraftRequiresAnExplicitEditingQueryToBeSelected(): void
+    {
+        $_GET = ['apa_agadev_edit_agreement' => '42'];
+        $service = new ShortcodeService(new MaivouDataService());
+        $requestedEditingAgreementId = Closure::bind(
+            static fn (ShortcodeService $target): int => $target->requestedEditingAgreementId(),
+            null,
+            ShortcodeService::class
+        );
+
+        self::assertSame(42, $requestedEditingAgreementId($service));
+
+        $_GET = [];
+
+        self::assertSame(0, $requestedEditingAgreementId($service));
     }
 
     public function testWordPressSubmissionUsesTheValidatedPendingIntent(): void
@@ -171,5 +205,21 @@ final class AgreementSubmissionTest extends TestCase
         self::assertStringContainsString("esc_attr_e('Télécharger le PDF'", $template);
         self::assertSame(3, substr_count($template, 'data-tooltip='));
         self::assertSame(3, substr_count($template, 'aria-hidden="true" focusable="false"'));
+    }
+
+    public function testAgreementModalSeparatesCreationAndEditingContexts(): void
+    {
+        $template = file_get_contents(PLUGIN_APA_AGADEV_PATH . 'templates/agreements.php');
+        $script = file_get_contents(PLUGIN_APA_AGADEV_PATH . 'assets/apa-agadev.js');
+
+        self::assertIsString($template);
+        self::assertIsString($script);
+        self::assertStringContainsString('data-apa-agreement-create-url=', $template);
+        self::assertStringContainsString('data-apa-agreement-mode=', $template);
+        self::assertGreaterThanOrEqual(2, substr_count($template, 'data-apa-agreement-modal-close'));
+        self::assertStringContainsString("var wasEditing = 'edit'", $script);
+        self::assertStringContainsString('window.location.replace(successReturnUrl)', $script);
+        self::assertStringContainsString("'Escape' !== event.key", $script);
+        self::assertStringContainsString('closeAgreementModal(modal)', $script);
     }
 }

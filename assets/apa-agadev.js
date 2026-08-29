@@ -28,6 +28,7 @@
 
         var submissionSucceeded = Boolean(modal.querySelector('.acl_shortcode_apa_form--success'));
         var successReturnUrl = modal.getAttribute('data-apa-success-return-url');
+        var wasEditing = 'edit' === modal.getAttribute('data-apa-agreement-mode');
 
         modal.classList.remove('is-open');
         modal.hidden = true;
@@ -41,23 +42,32 @@
         // A GET refresh discards the POST-rendered success state and rebuilds a fresh form.
         if (submissionSucceeded && successReturnUrl) {
             window.location.replace(successReturnUrl);
-        }
-    }
-
-    function clearEditingAgreementQuery() {
-        var currentUrl = new URL(window.location.href);
-
-        if (!currentUrl.searchParams.has('apa_agadev_edit_agreement')) {
             return;
         }
 
-        // The query parameter is only needed by PHP to preload the draft.
-        // Removing it after rendering prevents a browser refresh from reopening it.
+        // The page must be rendered again to discard the draft values and hidden ID.
+        if (wasEditing && successReturnUrl) {
+            window.location.replace(successReturnUrl);
+        }
+    }
+
+    function clearAgreementContextQuery() {
+        var currentUrl = new URL(window.location.href);
+
+        if (!currentUrl.searchParams.has('apa_agadev_edit_agreement') &&
+            !currentUrl.searchParams.has('apa_agadev_new_agreement')) {
+            return;
+        }
+
         currentUrl.searchParams.delete('apa_agadev_edit_agreement');
+        currentUrl.searchParams.delete('apa_agadev_new_agreement');
+
+        var cleanUrl = currentUrl.pathname + currentUrl.search + currentUrl.hash;
+
         window.history.replaceState(
             window.history.state,
             '',
-            currentUrl.pathname + currentUrl.search + currentUrl.hash
+            cleanUrl
         );
     }
 
@@ -371,7 +381,16 @@
 
         if (modalOpenButton) {
             var modalId = modalOpenButton.getAttribute('aria-controls');
-            openAgreementModal(modalId ? document.getElementById(modalId) : null, modalOpenButton, true);
+            var agreementModal = modalId ? document.getElementById(modalId) : null;
+            var createUrl = modalOpenButton.getAttribute('data-apa-agreement-create-url');
+
+            // Never reuse a modal whose HTML was rendered from an editing draft.
+            if (agreementModal && 'edit' === agreementModal.getAttribute('data-apa-agreement-mode') && createUrl) {
+                window.location.assign(createUrl);
+                return;
+            }
+
+            openAgreementModal(agreementModal, modalOpenButton, true);
             return;
         }
 
@@ -554,7 +573,12 @@
         document.querySelectorAll('[data-apa-modal-initial-open]').forEach(function (modal) {
             openAgreementModal(modal, null, false);
             modal.removeAttribute('data-apa-modal-initial-open');
-            clearEditingAgreementQuery();
+
+            // The creation marker is transient. The editing marker stays until close
+            // so that closing can force a clean server-rendered form.
+            if ('create' === modal.getAttribute('data-apa-agreement-mode')) {
+                clearAgreementContextQuery();
+            }
         });
     }
 

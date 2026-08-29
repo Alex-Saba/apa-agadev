@@ -24,6 +24,11 @@ $status_labels = [
 ];
 $modal_id = 'apa-agadev-agreement-modal';
 $modal_return_url = (string) add_query_arg('view', 'agrements', get_permalink());
+$new_agreement_url = (string) add_query_arg([
+    'view' => 'agrements',
+    'apa_agadev_new_agreement' => '1',
+], get_permalink());
+$modal_mode = $editing_agreement_id > 0 ? 'edit' : 'create';
 $agreement_items = array_values(array_filter($agreements, 'is_array'));
 $per_page = 10;
 $total_pages = max(1, (int) ceil(count($agreement_items) / $per_page));
@@ -53,7 +58,7 @@ $format_date = static function ($value): string {
             <h2 class="acl_shortcode_agreements_title acl_shortcode_h2"><?php esc_html_e('Mes agréments', 'plugin-apa-agadev'); ?></h2>
         </div>
         <?php if ('' === $agreement_detail) : ?>
-            <button type="button" class="acl_shortcode_agreements_add acl_shortcode_button_button" data-apa-agreement-modal-open aria-haspopup="dialog" aria-controls="<?php echo esc_attr($modal_id); ?>">
+            <button type="button" class="acl_shortcode_agreements_add acl_shortcode_button_button" data-apa-agreement-modal-open data-apa-agreement-create-url="<?php echo esc_url($new_agreement_url); ?>" aria-haspopup="dialog" aria-controls="<?php echo esc_attr($modal_id); ?>">
                 <?php esc_html_e('Ajouter un agrément', 'plugin-apa-agadev'); ?>
             </button>
         <?php endif; ?>
@@ -152,7 +157,7 @@ $format_date = static function ($value): string {
     <?php endif; ?>
 </section>
 
-<div id="<?php echo esc_attr($modal_id); ?>" class="acl_shortcode_agreement_modal<?php echo $open_modal ? ' is-open' : ''; ?> acl_shortcode_div" data-apa-agreement-modal data-apa-success-return-url="<?php echo esc_url($modal_return_url); ?>"<?php echo $open_modal ? ' data-apa-modal-initial-open="true"' : ' hidden'; ?>>
+<div id="<?php echo esc_attr($modal_id); ?>" class="acl_shortcode_agreement_modal<?php echo $open_modal ? ' is-open' : ''; ?> acl_shortcode_div" data-apa-agreement-modal data-apa-agreement-mode="<?php echo esc_attr($modal_mode); ?>" data-apa-success-return-url="<?php echo esc_url($modal_return_url); ?>"<?php echo $open_modal ? ' data-apa-modal-initial-open="true"' : ' hidden'; ?>>
     <div class="acl_shortcode_agreement_modal_backdrop acl_shortcode_div" data-apa-agreement-modal-close></div>
     <div class="acl_shortcode_agreement_modal_dialog acl_shortcode_div" role="dialog" aria-modal="true" aria-labelledby="<?php echo esc_attr($modal_id); ?>-title">
         <header class="acl_shortcode_agreement_modal_header acl_shortcode_div">

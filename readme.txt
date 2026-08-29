@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.7.17
+Stable tag: 2026.7.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,10 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.7.18 =
+* Separation du mode de creation d'une demande APA et du mode de modification d'un brouillon.
+* Nettoyage du contexte d'edition lors de la fermeture de la modale, sans suppression du brouillon ni de son contenu.
 
 = 2026.7.17 =
 * Harmonisation des marqueurs numerotes de la navigation et des en-tetes de sections APA.
