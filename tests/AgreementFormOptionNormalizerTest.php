@@ -91,6 +91,18 @@ final class AgreementFormOptionNormalizerTest extends TestCase
         ]));
     }
 
+    public function testZoneUuidUsesItsGeographicNamesAsVisibleLabel(): void
+    {
+        self::assertSame([
+            '109a4b2b-9cd4-44ff-a7a9-d79a9e8d29bd' => 'Estuaire — Komo-Mondah — Ntoum',
+        ], AgreementFormOptionNormalizer::normalize([[
+            'uuid' => '109a4b2b-9cd4-44ff-a7a9-d79a9e8d29bd',
+            'province_name' => 'Estuaire',
+            'department_name' => 'Komo-Mondah',
+            'department_capital_name' => 'Ntoum',
+        ]]));
+    }
+
     public function testProviderTypeRendersItsTechnicalValueInTheFormHtml(): void
     {
         $catalog = ['sections' => [

@@ -65,6 +65,10 @@ final class AgreementFormOptionNormalizer
         $value = self::firstValue($item, ['value', 'code', 'uuid', 'id', 'key']);
         $label = self::firstValue($item, ['label', 'name', 'title', 'code', 'value']);
 
+        if ('' === $label) {
+            $label = self::geographicLabel($item);
+        }
+
         return [$value, $label];
     }
 
@@ -82,7 +86,30 @@ final class AgreementFormOptionNormalizer
             return '';
         }
 
-        return self::firstValue($item, ['label', 'name', 'title', 'code', 'value']);
+        $label = self::firstValue($item, ['label', 'name', 'title', 'code', 'value']);
+
+        return '' !== $label ? $label : self::geographicLabel($item);
+    }
+
+    /**
+     * Builds the human-readable label exposed by Maivou zone records.
+     */
+    private static function geographicLabel(array $item): string
+    {
+        $parts = [];
+
+        foreach (['province_name', 'department_name', 'department_capital_name'] as $key) {
+            if (! array_key_exists($key, $item)) {
+                continue;
+            }
+
+            $part = self::stringValue($item[$key]);
+            if ('' !== $part && ! in_array($part, $parts, true)) {
+                $parts[] = $part;
+            }
+        }
+
+        return implode(' — ', $parts);
     }
 
     /** @param list<string> $keys */
