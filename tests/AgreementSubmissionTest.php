@@ -103,19 +103,21 @@ final class AgreementSubmissionTest extends TestCase
             ShortcodeService::class
         );
         $catalog = ['sections' => [
-            'provider_identification' => ['fields' => [
-                'providers' => [
-                    'type' => 'repeater',
-                    'fields' => [
-                        'type' => ['type' => 'select'],
-                        'name' => ['type' => 'text'],
+            'providers' => ['subsections' => [
+                'provider_identification' => ['fields' => [
+                    'providers' => [
+                        'type' => 'repeater',
+                        'fields' => [
+                            'type' => ['type' => 'select'],
+                            'name' => ['type' => 'text'],
+                        ],
                     ],
-                ],
+                ]],
             ]],
         ]];
 
         $payload = $normalize($service, [
-            'provider_identification' => [
+            'providers' => [
                 'providers' => [[
                     'type' => 'community_association',
                     'name' => 'Association locale',
@@ -125,8 +127,9 @@ final class AgreementSubmissionTest extends TestCase
 
         self::assertSame(
             'community_association',
-            $payload['provider_identification']['providers'][0]['type']
+            $payload['providers'][0]['type']
         );
+        self::assertArrayNotHasKey('providers', $payload['providers'][0]);
     }
 
     public function testWordPressSubmissionCanBuildAnIncompleteDraft(): void

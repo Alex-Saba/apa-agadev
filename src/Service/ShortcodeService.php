@@ -779,7 +779,14 @@ final class ShortcodeService
             }
 
             if ($normalized !== []) {
-                $payload[$section_key] = $normalized;
+                // The Maivou catalog groups the providers repeater inside a
+                // providers section, while the API contract expects the rows
+                // directly at the root `providers` key.
+                if ('providers' === $section_key && is_array($normalized['providers'] ?? null)) {
+                    $payload[$section_key] = $normalized['providers'];
+                } else {
+                    $payload[$section_key] = $normalized;
+                }
             }
         }
 
