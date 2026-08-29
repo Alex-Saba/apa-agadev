@@ -93,6 +93,42 @@ final class AgreementSubmissionTest extends TestCase
         ], $payload['genetic_resources']['resources']);
     }
 
+    public function testProviderTypeKeepsTheTechnicalValueSubmittedByTheForm(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $normalize = Closure::bind(
+            static fn (ShortcodeService $target, array $submitted, array $catalog, string $status): array =>
+                $target->normalizeAgreement($submitted, $catalog, $status),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'provider_identification' => ['fields' => [
+                'providers' => [
+                    'type' => 'repeater',
+                    'fields' => [
+                        'type' => ['type' => 'select'],
+                        'name' => ['type' => 'text'],
+                    ],
+                ],
+            ]],
+        ]];
+
+        $payload = $normalize($service, [
+            'provider_identification' => [
+                'providers' => [[
+                    'type' => 'community_association',
+                    'name' => 'Association locale',
+                ]],
+            ],
+        ], $catalog, 'pending');
+
+        self::assertSame(
+            'community_association',
+            $payload['provider_identification']['providers'][0]['type']
+        );
+    }
+
     public function testWordPressSubmissionCanBuildAnIncompleteDraft(): void
     {
         $service = new ShortcodeService(new MaivouDataService());

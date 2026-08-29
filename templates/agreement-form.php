@@ -10,6 +10,9 @@
  * @var int $editing_agreement_id
  * @var string $layout
  */
+
+use PluginApaAgadev\Service\AgreementFormOptionNormalizer;
+
 if (! defined('ABSPATH')) {
     exit;
 }
@@ -80,39 +83,10 @@ $field_options = static function (array $field) use ($remote_options): array {
     // Maivou may resolve a select with both an empty `options` array and an
     // `optionsEndpoint`; in that case the endpoint remains the source of truth.
     if ('' === $endpoint) {
-        return is_array($field['options'] ?? null) ? $field['options'] : [];
+        return AgreementFormOptionNormalizer::normalize($field['options'] ?? []);
     }
 
-    $items = is_array($remote_options[$endpoint] ?? null) ? $remote_options[$endpoint] : [];
-    $options = [];
-
-    foreach ($items as $item) {
-        if (! is_array($item)) {
-            continue;
-        }
-
-        // Match the identifiers consumed by Maivou's own APA form renderer.
-        if ('/api/products' === $endpoint) {
-            $value = $item['uuid'] ?? $item['code'] ?? $item['id'] ?? null;
-        } elseif ('/api/zones' === $endpoint) {
-            $value = $item['id'] ?? $item['uuid'] ?? $item['code'] ?? null;
-        } else {
-            $value = $item['code'] ?? $item['uuid'] ?? $item['id'] ?? null;
-        }
-
-        if (null === $value) {
-            continue;
-        }
-
-        $label = $item['name'] ?? $item['title'] ?? $item['code'] ?? null;
-        if (null === $label && isset($item['province_name'], $item['department_name'])) {
-            $label = (string) $item['province_name'] . ' — ' . (string) $item['department_name'];
-        }
-
-        $options[(string) $value] = (string) ($label ?? $value);
-    }
-
-    return $options;
+    return AgreementFormOptionNormalizer::normalize($remote_options[$endpoint] ?? []);
 };
 
 $render_input = static function (
