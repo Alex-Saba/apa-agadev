@@ -6,6 +6,15 @@ use PHPUnit\Framework\TestCase;
 use PluginApaAgadev\Service\MaivouDataService;
 use PluginApaAgadev\Service\ShortcodeService;
 
+if (! function_exists('wp_json_encode')) {
+    function wp_json_encode($value): string
+    {
+        $encoded = json_encode($value);
+
+        return is_string($encoded) ? $encoded : '';
+    }
+}
+
 final class AgreementSubmissionTest extends TestCase
 {
     protected function tearDown(): void
@@ -109,7 +118,12 @@ final class AgreementSubmissionTest extends TestCase
                         'type' => 'repeater',
                         'fields' => [
                             'type' => ['type' => 'select'],
+                            'identification' => ['type' => 'file'],
                             'name' => ['type' => 'text'],
+                            'address' => ['type' => 'text'],
+                            'contact_person' => ['type' => 'text'],
+                            'email' => ['type' => 'email'],
+                            'phone' => ['type' => 'text'],
                         ],
                     ],
                 ]],
@@ -121,15 +135,106 @@ final class AgreementSubmissionTest extends TestCase
                 'providers' => [[
                     'type' => 'community_association',
                     'name' => 'Association locale',
+                    'address' => 'Libreville, Gabon',
+                    'contact_person' => 'Arielle M.',
+                    'email' => 'arielle@example.test',
+                    'phone' => '+241 07 00 00 00',
                 ]],
             ],
         ], $catalog, 'pending');
 
-        self::assertSame(
-            'community_association',
-            $payload['providers'][0]['type']
-        );
+        self::assertSame([
+            'type' => 'community_association',
+            'name' => 'Association locale',
+            'address' => 'Libreville, Gabon',
+            'contact_person' => 'Arielle M.',
+            'email' => 'arielle@example.test',
+            'phone' => '+241 07 00 00 00',
+        ], $payload['providers'][0]);
         self::assertArrayNotHasKey('providers', $payload['providers'][0]);
+    }
+
+    public function testProviderDocumentPathMatchesMaivouRootListContract(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $canonicalize = Closure::bind(
+            static fn (ShortcodeService $target, string $path): string => $target->canonicalDocumentPath($path),
+            null,
+            ShortcodeService::class
+        );
+
+        self::assertSame(
+            'providers.0.identification',
+            $canonicalize($service, 'providers.providers.0.identification')
+        );
+        self::assertSame(
+            'project.project_summary_attachment',
+            $canonicalize($service, 'project.project_summary_attachment')
+        );
+    }
+
+    public function testCompleteProviderPayloadIsHandedToMaivouWithoutAFormWrapper(): void
+    {
+        $providers = [[
+            'type' => 'individual',
+            'name' => 'Fournisseur test',
+            'address' => 'Port-Gentil, Gabon',
+            'contact_person' => 'Jean M.',
+            'email' => 'jean@example.test',
+            'phone' => '+241 06 00 00 00',
+        ]];
+
+        (new MaivouDataService())->createAgreement([
+            'providers' => $providers,
+            'status' => 'pending',
+        ]);
+
+        self::assertSame('/agreements', $GLOBALS['apa_test_api_arguments']['endpoint']);
+        self::assertSame('POST', $GLOBALS['apa_test_api_arguments']['method']);
+        self::assertSame($providers, $GLOBALS['apa_test_api_arguments']['body']['providers']);
+        self::assertArrayNotHasKey('providers', $GLOBALS['apa_test_api_arguments']['body']['providers'][0]);
+    }
+
+    public function testMultipartProviderSubmissionUsesTheNativePayloadAndDocumentPath(): void
+    {
+        $providers = [
+            [
+                'type' => 'individual',
+                'name' => 'Premier fournisseur',
+                'email' => 'premier@example.test',
+            ],
+            [
+                'type' => 'enterprise',
+                'name' => 'Deuxième fournisseur',
+                'email' => 'deuxieme@example.test',
+            ],
+        ];
+        $files = [
+            'documents[0]' => [
+                'path' => '/tmp/provider-identification.pdf',
+                'filename' => 'identification.pdf',
+                'mime' => 'application/pdf',
+            ],
+        ];
+        $manifest = [[
+            'path' => 'providers.1.identification',
+            'multiple' => false,
+        ]];
+
+        (new MaivouDataService())->createAgreement([
+            'providers' => $providers,
+            'status' => 'pending',
+        ], $files, $manifest);
+
+        $arguments = $GLOBALS['apa_test_api_arguments'];
+        $payload = json_decode((string) $arguments['fields']['payload'], true);
+        $submittedManifest = json_decode((string) $arguments['fields']['document_manifest'], true);
+
+        self::assertSame('/agreements', $arguments['endpoint']);
+        self::assertSame('POST', $arguments['method']);
+        self::assertSame($providers, $payload['providers']);
+        self::assertSame($manifest, $submittedManifest);
+        self::assertSame($files, $arguments['files']);
     }
 
     public function testGeneticResourceTechnicalIdentifiersRemainCanonicalDuringSubmission(): void

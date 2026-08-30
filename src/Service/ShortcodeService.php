@@ -380,12 +380,16 @@ final class ShortcodeService
             $submitted_path = isset($_POST[$path_key])
                 ? sanitize_text_field(wp_unslash((string) $_POST[$path_key]))
                 : '';
-            $path = $this->agreementFieldPath($submitted_path);
-            $multiple = $this->allowedFilePath($path, $allowed_paths);
+            $catalog_path = $this->agreementFieldPath($submitted_path);
+            $multiple = $this->allowedFilePath($catalog_path, $allowed_paths);
 
             if (null === $multiple) {
                 return $this->documentError(__('Un document cible un champ absent du formulaire autorisé.', 'plugin-apa-agadev'));
             }
+
+            // Validate the catalog-shaped browser path before translating the
+            // providers repeater to Maivou's root-list persistence contract.
+            $path = $this->canonicalDocumentPath($catalog_path);
 
             if (! is_array($upload)) {
                 return $this->documentError(__('La structure d’un document téléversé est invalide.', 'plugin-apa-agadev'));
@@ -535,6 +539,18 @@ final class ShortcodeService
         $path = preg_replace('/^agreement\./', '', $path);
 
         return is_string($path) ? trim($path, '.') : '';
+    }
+
+    /**
+     * Translates form-only wrappers to the persisted Maivou document path.
+     */
+    private function canonicalDocumentPath(string $catalogPath): string
+    {
+        if (preg_match('/^providers\.providers\.(\d+)\.(.+)$/', $catalogPath, $matches)) {
+            return 'providers.' . $matches[1] . '.' . $matches[2];
+        }
+
+        return $catalogPath;
     }
 
     /**
