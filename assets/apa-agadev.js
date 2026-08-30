@@ -253,6 +253,12 @@
         }
 
         var targetIndex = Math.max(0, Math.min(index, steps.length - 1));
+        var currentStepInput = form.querySelector('[data-apa-current-step-input]');
+
+        if (currentStepInput) {
+            currentStepInput.value = String(targetIndex);
+        }
+
         steps.forEach(function (step, stepIndex) {
             step.hidden = stepIndex !== targetIndex;
         });
@@ -294,18 +300,108 @@
         }
     }
 
+    var validationErrorSequence = 0;
+
+    function clearValidationError(control) {
+        var field = control ? control.closest('.acl_shortcode_apa_field') : null;
+
+        if (!field) {
+            return;
+        }
+
+        var error = field.querySelector('[data-apa-field-error]');
+        field.classList.remove('has-validation-error');
+        field.querySelectorAll('[aria-invalid="true"]').forEach(function (fieldControl) {
+            fieldControl.removeAttribute('aria-invalid');
+            fieldControl.removeAttribute('aria-describedby');
+        });
+
+        if (error) {
+            error.remove();
+        }
+    }
+
+    function showValidationError(control, message) {
+        var field = control ? control.closest('.acl_shortcode_apa_field') : null;
+
+        if (!field) {
+            return;
+        }
+
+        var error = field.querySelector('[data-apa-field-error]');
+        if (!error) {
+            error = document.createElement('span');
+            error.id = 'apa-field-error-' + (++validationErrorSequence);
+            error.className = 'acl_shortcode_apa_field_error';
+            error.dataset.apaFieldError = '';
+            error.setAttribute('role', 'tooltip');
+            field.appendChild(error);
+        }
+
+        error.textContent = message;
+        field.classList.add('has-validation-error');
+        control.setAttribute('aria-invalid', 'true');
+        control.setAttribute('aria-describedby', error.id);
+    }
+
     function validateStep(step) {
         var controls = Array.prototype.slice.call(step.querySelectorAll('input, select, textarea'));
+        var requiredGroups = Array.prototype.slice.call(step.querySelectorAll('[data-apa-required-group]'));
+        var firstInvalid = null;
+
+        controls.forEach(function (control) {
+            clearValidationError(control);
+        });
+
+        for (var groupIndex = 0; groupIndex < requiredGroups.length; groupIndex++) {
+            var groupControls = Array.prototype.slice.call(requiredGroups[groupIndex].querySelectorAll('input[type="checkbox"]'))
+                .filter(function (control) { return !control.disabled; });
+            var firstGroupControl = groupControls[0];
+
+            groupControls.forEach(function (control) {
+                control.setCustomValidity('');
+            });
+
+            if (firstGroupControl && !groupControls.some(function (control) { return control.checked; })) {
+                firstGroupControl.setCustomValidity('Veuillez sélectionner au moins une option.');
+                showValidationError(firstGroupControl, 'Sélectionnez au moins une option.');
+                firstInvalid = firstInvalid || firstGroupControl;
+            }
+        }
 
         for (var index = 0; index < controls.length; index++) {
             if (!controls[index].disabled && !controls[index].checkValidity()) {
-                markSectionError(step, true);
-                controls[index].reportValidity();
+                showValidationError(
+                    controls[index],
+                    controls[index].validity.valueMissing
+                        ? 'Ce champ est obligatoire.'
+                        : controls[index].validationMessage
+                );
+                firstInvalid = firstInvalid || controls[index];
+            }
+        }
+
+        markSectionError(step, Boolean(firstInvalid));
+
+        if (firstInvalid) {
+            firstInvalid.focus({ preventScroll: false });
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateStepsThrough(form, currentIndex) {
+        var dataSteps = Array.prototype.slice.call(form.querySelectorAll('[data-apa-step]:not([data-apa-review-step])'));
+        var lastIndex = Math.min(Math.max(0, currentIndex), dataSteps.length - 1);
+
+        for (var index = 0; index <= lastIndex; index++) {
+            if (!validateStep(dataSteps[index])) {
+                showStep(form, index, true);
                 return false;
             }
         }
 
-        markSectionError(step, false);
         return true;
     }
 
@@ -525,8 +621,11 @@
         var submitter = event.submitter || document.activeElement;
         var savesDraft = Boolean(submitter && submitter.matches('[data-apa-save-draft]'));
 
-        // A draft is intentionally allowed from any section and may be incomplete.
         if (savesDraft) {
+            if (!validateStepsThrough(form, currentIndex)) {
+                event.preventDefault();
+                return;
+            }
             prepareFileSubmission(form);
             return;
         }
@@ -540,6 +639,32 @@
         } else {
             prepareFileSubmission(form);
         }
+    });
+
+    ['input', 'change'].forEach(function (eventName) {
+        document.addEventListener(eventName, function (event) {
+            var control = event.target.closest('[data-apa-step-form] input, [data-apa-step-form] select, [data-apa-step-form] textarea');
+
+            if (!control) {
+                return;
+            }
+
+            var requiredGroup = control.closest('[data-apa-required-group]');
+            if (requiredGroup) {
+                var groupControls = Array.prototype.slice.call(requiredGroup.querySelectorAll('input[type="checkbox"]'));
+                if (groupControls.some(function (groupControl) { return groupControl.checked; })) {
+                    groupControls.forEach(function (groupControl) {
+                        groupControl.setCustomValidity('');
+                    });
+                    clearValidationError(control);
+                }
+                return;
+            }
+
+            if (control.checkValidity()) {
+                clearValidationError(control);
+            }
+        });
     });
 
     function initializeStepForms() {

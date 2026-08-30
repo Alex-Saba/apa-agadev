@@ -107,17 +107,44 @@ final class ShortcodeService
                             __('Seule une demande APA en brouillon peut être modifiée.', 'plugin-apa-agadev')
                         );
                     } else {
-                        // File inputs cannot be prefilled by browsers. Preserve their
-                        // authenticated Maivou references while updating other fields.
-                        $payload = $this->preserveDocumentValues($payload, $draftResponse['data'], $catalog);
-                        $submission = $this->data->updateAgreement($editingAgreementId, $payload);
+                        $draftValidationError = 'draft' === $submissionIntent
+                            ? $this->validateDraftProgress(
+                                $submitted,
+                                $catalog,
+                                $this->submittedCurrentStep(),
+                                $documents['manifest'],
+                                $this->agreementFormValues($draftResponse['data'], $catalog)
+                            )
+                            : '';
+
+                        if ('' !== $draftValidationError) {
+                            $submission = $this->submissionError(422, $draftValidationError);
+                        } else {
+                            // File inputs cannot be prefilled by browsers. Preserve their
+                            // authenticated Maivou references while updating other fields.
+                            $payload = $this->preserveDocumentValues($payload, $draftResponse['data'], $catalog);
+                            $submission = $this->data->updateAgreement($editingAgreementId, $payload);
+                        }
                     }
                 } else {
-                    $submission = $this->data->createAgreement(
-                        $payload,
-                        $documents['files'],
-                        $documents['manifest']
-                    );
+                    $draftValidationError = 'draft' === $submissionIntent
+                        ? $this->validateDraftProgress(
+                            $submitted,
+                            $catalog,
+                            $this->submittedCurrentStep(),
+                            $documents['manifest']
+                        )
+                        : '';
+
+                    if ('' !== $draftValidationError) {
+                        $submission = $this->submissionError(422, $draftValidationError);
+                    } else {
+                        $submission = $this->data->createAgreement(
+                            $payload,
+                            $documents['files'],
+                            $documents['manifest']
+                        );
+                    }
                 }
 
                 if ($submission['ok']) {
@@ -350,6 +377,252 @@ final class ShortcodeService
         $agreement = isset($_POST['agreement']) ? wp_unslash($_POST['agreement']) : [];
 
         return is_array($agreement) ? $agreement : [];
+    }
+
+    /**
+     * Returns the visible workflow step from which the draft was saved.
+     */
+    private function submittedCurrentStep(): int
+    {
+        if (! isset($_POST['apa_agadev_current_step']) || ! is_scalar($_POST['apa_agadev_current_step'])) {
+            return 0;
+        }
+
+        return max(0, absint(wp_unslash((string) $_POST['apa_agadev_current_step'])));
+    }
+
+    /**
+     * A draft may omit future sections, but every visited section must be valid.
+     *
+     * @param array<string, mixed> $submitted
+     * @param array<string, mixed> $catalog
+     * @param list<array{path:string,multiple:bool}> $documentManifest
+     * @param array<string, mixed> $existing
+     */
+    private function validateDraftProgress(
+        array $submitted,
+        array $catalog,
+        int $currentStep,
+        array $documentManifest = [],
+        array $existing = []
+    ): string {
+        $steps = [];
+        $sections = is_array($catalog['sections'] ?? null) ? $catalog['sections'] : [];
+
+        foreach ($sections as $sectionKey => $section) {
+            if (! is_string($sectionKey) || ! is_array($section)) {
+                continue;
+            }
+
+            $fields = is_array($section['fields'] ?? null) ? $section['fields'] : [];
+            $subsections = is_array($section['subsections'] ?? null) ? $section['subsections'] : [];
+
+            if ([] === $fields && [] === $subsections) {
+                continue;
+            }
+
+            $steps[] = [
+                'key' => $sectionKey,
+                'label' => (string) ($section['title'] ?? $sectionKey),
+                'fields' => $fields,
+                'subsections' => $subsections,
+            ];
+        }
+
+        if ([] === $steps) {
+            return '';
+        }
+
+        $documentPaths = [];
+        foreach ($documentManifest as $document) {
+            if (is_array($document) && is_scalar($document['path'] ?? null)) {
+                $documentPaths[(string) $document['path']] = true;
+            }
+        }
+
+        $lastStep = min($currentStep, count($steps) - 1);
+
+        for ($stepIndex = 0; $stepIndex <= $lastStep; $stepIndex++) {
+            $step = $steps[$stepIndex];
+            $sectionKey = (string) $step['key'];
+            $rawSection = is_array($submitted[$sectionKey] ?? null) ? $submitted[$sectionKey] : [];
+            $existingSection = is_array($existing[$sectionKey] ?? null) ? $existing[$sectionKey] : [];
+            $missingLabel = $this->requiredFieldMissing(
+                $rawSection,
+                $existingSection,
+                $step['fields'],
+                [$sectionKey],
+                $documentPaths
+            );
+
+            foreach ($step['subsections'] as $subsectionKey => $subsection) {
+                if ('' !== $missingLabel || ! is_array($subsection)) {
+                    break;
+                }
+
+                $missingLabel = $this->requiredFieldMissing(
+                    $rawSection,
+                    $existingSection,
+                    $subsection['fields'] ?? [],
+                    [$sectionKey],
+                    $documentPaths
+                );
+
+                if ('' !== $missingLabel || ! is_string($subsectionKey)) {
+                    continue;
+                }
+
+                $rawBenefits = is_array($rawSection[$subsectionKey] ?? null) ? $rawSection[$subsectionKey] : [];
+                $existingBenefits = is_array($existingSection[$subsectionKey] ?? null)
+                    ? $existingSection[$subsectionKey]
+                    : [];
+
+                foreach ((array) ($subsection['benefits'] ?? []) as $benefitKey => $benefit) {
+                    if (! is_string($benefitKey) || ! is_array($benefit)) {
+                        continue;
+                    }
+
+                    $missingLabel = $this->requiredFieldMissing(
+                        is_array($rawBenefits[$benefitKey] ?? null) ? $rawBenefits[$benefitKey] : [],
+                        is_array($existingBenefits[$benefitKey] ?? null) ? $existingBenefits[$benefitKey] : [],
+                        $benefit['fields'] ?? [],
+                        [$sectionKey, $subsectionKey, $benefitKey],
+                        $documentPaths
+                    );
+
+                    if ('' !== $missingLabel) {
+                        break;
+                    }
+                }
+            }
+
+            if ('' !== $missingLabel) {
+                return sprintf(
+                    /* translators: 1: section title, 2: required field label */
+                    __('Complétez les champs obligatoires de la section « %1$s » avant d’enregistrer le brouillon. Champ manquant : %2$s.', 'plugin-apa-agadev'),
+                    (string) $step['label'],
+                    $missingLabel
+                );
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array<string, mixed> $submitted
+     * @param array<string, mixed> $existing
+     * @param mixed $definitions
+     * @param list<string> $path
+     * @param array<string, bool> $documentPaths
+     */
+    private function requiredFieldMissing(
+        array $submitted,
+        array $existing,
+        $definitions,
+        array $path,
+        array $documentPaths
+    ): string {
+        if (! is_array($definitions)) {
+            return '';
+        }
+
+        foreach ($definitions as $key => $definition) {
+            if (! is_string($key) || ! is_array($definition)) {
+                continue;
+            }
+
+            if ($this->isList($definition)) {
+                $definition = is_array($definition[0] ?? null) ? $definition[0] : [];
+            }
+
+            $type = (string) ($definition['type'] ?? 'text');
+            $label = (string) ($definition['label'] ?? $key);
+            $value = $submitted[$key] ?? null;
+            $existingValue = $existing[$key] ?? null;
+            $fieldPath = [...$path, $key];
+
+            if ('repeater' === $type) {
+                $rows = is_array($value) ? $value : [];
+                $existingRows = is_array($existingValue) ? $existingValue : [];
+                $meaningfulRows = array_filter($rows, fn ($row): bool => $this->hasMeaningfulValue($row));
+
+                if (! empty($definition['required']) && [] === $meaningfulRows) {
+                    return $label;
+                }
+
+                foreach ($rows as $rowIndex => $row) {
+                    if (! is_array($row) || (! $this->hasMeaningfulValue($row) && empty($definition['required']))) {
+                        continue;
+                    }
+
+                    $missing = $this->requiredFieldMissing(
+                        $row,
+                        is_array($existingRows[$rowIndex] ?? null) ? $existingRows[$rowIndex] : [],
+                        $definition['fields'] ?? [],
+                        [...$fieldPath, (string) $rowIndex],
+                        $documentPaths
+                    );
+
+                    if ('' !== $missing) {
+                        return $missing;
+                    }
+                }
+
+                continue;
+            }
+
+            if (empty($definition['required'])) {
+                continue;
+            }
+
+            if (in_array($type, ['file', 'dropzone'], true)) {
+                $canonicalPath = $this->canonicalDocumentPath(implode('.', $fieldPath));
+                if (! $this->hasMeaningfulValue($value)
+                    && ! $this->hasMeaningfulValue($existingValue)
+                    && empty($documentPaths[$canonicalPath])) {
+                    return $label;
+                }
+                continue;
+            }
+
+            if ('checkbox' === $type) {
+                if (! in_array($value, [true, 1, '1'], true)) {
+                    return $label;
+                }
+                continue;
+            }
+
+            if (! $this->hasMeaningfulValue($value)) {
+                return $label;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Treats nested arrays, false checkboxes and whitespace-only strings as empty.
+     *
+     * @param mixed $value
+     */
+    private function hasMeaningfulValue($value): bool
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($this->hasMeaningfulValue($item)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return is_scalar($value) && '' !== trim((string) $value) && '0' !== trim((string) $value);
     }
 
     /**

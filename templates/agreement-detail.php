@@ -14,6 +14,7 @@ if (! defined('ABSPATH')) {
 $detail_title = (string) ($agreement_detail['code'] ?? '');
 $detail_title = $detail_title !== '' ? $detail_title : __('Formulaire APA', 'plugin-apa-agadev');
 $sections = array_values(array_filter((array) ($agreement_detail['sections'] ?? []), 'is_array'));
+$documents = array_values(array_filter((array) ($agreement_detail['documents'] ?? []), 'is_array'));
 $field_count = 0;
 
 foreach ($sections as $section) {
@@ -75,6 +76,35 @@ $display_value = static function ($value): string {
         <div><dt><?php esc_html_e('Début de validité', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html((string) ($agreement_detail['starts_at'] ?? '—')); ?></dd></div>
         <div><dt><?php esc_html_e('Fin de validité', 'plugin-apa-agadev'); ?></dt><dd><?php echo esc_html((string) ($agreement_detail['ends_at'] ?? '—')); ?></dd></div>
     </dl>
+
+    <?php if ($documents !== []) : ?>
+        <section class="acl_shortcode_agreement_documents" aria-labelledby="apa-agreement-documents-title">
+            <div class="acl_shortcode_agreement_documents_header">
+                <span class="acl_shortcode_agreement_documents_icon" aria-hidden="true">&#128196;</span>
+                <div>
+                    <h4 id="apa-agreement-documents-title"><?php esc_html_e('Documents joints', 'plugin-apa-agadev'); ?></h4>
+                    <p><?php esc_html_e('Documents enregistrés avec cette demande APA.', 'plugin-apa-agadev'); ?></p>
+                </div>
+            </div>
+            <ul class="acl_shortcode_agreement_documents_list">
+                <?php foreach ($documents as $document) : ?>
+                    <li>
+                        <strong><?php echo esc_html((string) ($document['name'] ?? '')); ?></strong>
+                        <span>
+                            <?php
+                            $document_meta = array_values(array_filter([
+                                (string) ($document['context'] ?? ''),
+                                (string) ($document['mime_type'] ?? ''),
+                                (string) ($document['size'] ?? ''),
+                            ], static fn (string $item): bool => $item !== ''));
+                            echo esc_html(implode(' · ', $document_meta));
+                            ?>
+                        </span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
+    <?php endif; ?>
 
     <div class="acl_shortcode_agreement_content<?php echo count($sections) > 1 ? '' : ' acl_shortcode_agreement_content--single'; ?> acl_shortcode_div">
         <?php if (count($sections) > 1) : ?>

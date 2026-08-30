@@ -466,6 +466,40 @@
     padding: 0;
 }
 
+.acl_shortcode_apa_field.has-validation-error .acl_shortcode_input_text,
+.acl_shortcode_apa_field.has-validation-error .acl_shortcode_select,
+.acl_shortcode_apa_field.has-validation-error .acl_shortcode_textarea,
+.acl_shortcode_apa_field.has-validation-error .acl_shortcode_apa_choices,
+.acl_shortcode_apa_field.has-validation-error .acl_shortcode_apa_dropzone {
+    border-color: #b42318;
+    box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.13);
+}
+
+.acl_shortcode_apa_field_error {
+    align-self: flex-start;
+    background: #8f251d;
+    border-radius: 0.4rem;
+    color: #fff;
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-top: 0.55rem;
+    max-width: 100%;
+    padding: 0.45rem 0.65rem;
+    position: relative;
+}
+
+.acl_shortcode_apa_field_error::before {
+    border-bottom: 0.35rem solid #8f251d;
+    border-left: 0.35rem solid transparent;
+    border-right: 0.35rem solid transparent;
+    content: "";
+    left: 0.75rem;
+    position: absolute;
+    top: -0.34rem;
+}
+
 .acl_shortcode_apa_dropzone {
     align-items: center;
     background: var(--apa-form-surface-soft);
@@ -742,10 +776,41 @@
 }
 
 .acl_shortcode_apa_existing_document {
-    color: #dff3e7;
-    display: block;
+    align-items: flex-start;
+    background: #eaf5ee;
+    border: 1px solid #bcd8c7;
+    border-radius: 0.55rem;
+    color: #123c27;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-top: 0.45rem;
+    padding: 0.6rem 0.75rem;
+    position: relative;
+    text-align: left;
+    width: min(100%, 34rem);
+    z-index: 2;
+}
+
+.acl_shortcode_apa_existing_document strong,
+.acl_shortcode_apa_existing_document span,
+.acl_shortcode_apa_existing_document small {
+    opacity: 1;
+}
+
+.acl_shortcode_apa_existing_document strong {
+    font-size: 0.76rem;
+}
+
+.acl_shortcode_apa_existing_document span {
+    font-size: 0.78rem;
     font-weight: 700;
-    margin-top: 0.3rem;
+    overflow-wrap: anywhere;
+}
+
+.acl_shortcode_apa_existing_document small {
+    color: #52645a;
+    font-size: 0.7rem;
 }
 
 @media (max-width: 900px) {
@@ -1167,6 +1232,74 @@
 .acl_shortcode_agreement_fields dd {
     margin: 0;
     overflow-wrap: anywhere;
+}
+
+.acl_shortcode_agreement_documents {
+    background: #fffaf5;
+    border: 1px solid #ead7c6;
+    border-radius: 0.85rem;
+    margin: 0 0 1.5rem;
+    padding: 1rem;
+}
+
+.acl_shortcode_agreement_documents_header {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.acl_shortcode_agreement_documents_icon {
+    align-items: center;
+    background: #dc6907;
+    border-radius: 0.55rem;
+    color: #fff;
+    display: inline-flex;
+    flex: 0 0 2.5rem;
+    font-size: 1.2rem;
+    height: 2.5rem;
+    justify-content: center;
+}
+
+.acl_shortcode_agreement_documents h4 {
+    color: #123c27;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.acl_shortcode_agreement_documents p {
+    color: #68736c;
+    font-size: 0.78rem;
+    margin: 0.15rem 0 0;
+}
+
+.acl_shortcode_agreement_documents_list {
+    display: grid;
+    gap: 0.6rem;
+    list-style: none;
+    margin: 0.85rem 0 0;
+    padding: 0;
+}
+
+.acl_shortcode_agreement_documents_list li {
+    background: #fff;
+    border: 1px solid #eee2d8;
+    border-radius: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    padding: 0.7rem 0.8rem;
+}
+
+.acl_shortcode_agreement_documents_list strong {
+    color: #1b241f;
+    font-size: 0.86rem;
+    overflow-wrap: anywhere;
+}
+
+.acl_shortcode_agreement_documents_list span {
+    color: #68736c;
+    font-size: 0.72rem;
 }
 
 .acl_shortcode_agreement_content {

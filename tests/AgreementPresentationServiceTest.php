@@ -17,9 +17,13 @@ final class AgreementPresentationServiceTest extends TestCase
             ['Impact local', 'Impact temporaire'],
             $detail['sections'][0]['groups'][1]['entries'][0]['fields'][0]['display_value']
         );
+        self::assertSame('justificatif-fournisseur.pdf', $detail['documents'][0]['name']);
+        self::assertSame('Identification du fournisseur', $detail['documents'][0]['context']);
+        self::assertSame('240,0 Ko', $detail['documents'][0]['size']);
 
         $serialized = json_encode($detail, JSON_THROW_ON_ERROR);
         self::assertStringNotContainsString('00000000-0000-4000-8000-000000000301', $serialized);
+        self::assertStringNotContainsString('740b2a78-29c3-4382-8f54-aa15d02e325c', $serialized);
         self::assertStringNotContainsString('"local"', $serialized);
         self::assertStringNotContainsString('"temporary"', $serialized);
     }
@@ -74,6 +78,9 @@ final class AgreementPresentationServiceTest extends TestCase
 
         self::assertStringContainsString('Résine d’Okoumé', $html);
         self::assertStringContainsString('Impact local', $html);
+        self::assertStringContainsString('Documents joints', $html);
+        self::assertStringContainsString('justificatif-fournisseur.pdf', $html);
+        self::assertStringContainsString('Identification du fournisseur', $html);
         self::assertStringContainsString('data-apa-agreement-detail', $html);
         self::assertStringContainsString('data-apa-agreement-long="0"', $html);
         self::assertStringContainsString('data-apa-agreement-section open', $html);
@@ -124,6 +131,17 @@ final class AgreementPresentationServiceTest extends TestCase
             'created_at' => '2026-08-06T10:00:00Z',
             'user' => ['firstname' => 'Alex', 'lastname' => 'Saba'],
             'genetic_resources' => ['impact_values' => ['local', 'temporary']],
+            'providers' => [[
+                'type' => 'individual',
+                'name' => 'Fournisseur test',
+                'identification' => [
+                    'uuid' => '01a053b7-9839-71b5-a11a-141bbd6d35a3',
+                    'document_uuid' => '740b2a78-29c3-4382-8f54-aa15d02e325c',
+                    'name' => 'justificatif-fournisseur.pdf',
+                    'mime_type' => 'application/pdf',
+                    'size' => 245760,
+                ],
+            ]],
             'presentation' => [
                 'sections' => [[
                     'key' => 'genetic_resources',

@@ -134,7 +134,7 @@ $render_input = static function (
             </select>
         <?php elseif ('multiselect' === $type) : ?>
             <?php $selected_values = AgreementFormOptionNormalizer::normalizeSelected($value, $option_data['items'], $option_data['endpoint']); ?>
-            <div class="acl_shortcode_apa_choices acl_shortcode_div" role="group" aria-labelledby="<?php echo esc_attr($id); ?>-label"<?php echo $required ? ' aria-required="true"' : ''; ?>>
+            <div class="acl_shortcode_apa_choices acl_shortcode_div" role="group" aria-labelledby="<?php echo esc_attr($id); ?>-label"<?php echo $required ? ' aria-required="true" data-apa-required-group' : ''; ?>>
                 <?php foreach ($options as $option_value => $option_label) : ?>
                     <?php $option_id = $id . '-' . substr(md5((string) $option_value), 0, 8); ?>
                     <label class="acl_shortcode_apa_choice" for="<?php echo esc_attr($option_id); ?>">
@@ -162,6 +162,31 @@ $render_input = static function (
         <?php elseif (in_array($type, ['file', 'dropzone'], true)) : ?>
             <?php $allows_multiple_files = 'dropzone' === $type; ?>
             <?php $has_existing_file = is_array($value) ? $value !== [] : is_scalar($value) && '' !== trim((string) $value); ?>
+            <?php
+            $existing_document_names = [];
+            $collect_existing_document_names = static function ($document) use (&$collect_existing_document_names, &$existing_document_names): void {
+                if (is_array($document) && is_scalar($document['name'] ?? null)) {
+                    $document_name = trim((string) $document['name']);
+                    if ($document_name !== '') {
+                        $existing_document_names[] = $document_name;
+                    }
+                    return;
+                }
+
+                if (is_array($document)) {
+                    foreach ($document as $item) {
+                        $collect_existing_document_names($item);
+                    }
+                    return;
+                }
+
+                if (is_scalar($document) && trim((string) $document) !== '') {
+                    $existing_document_names[] = trim((string) $document);
+                }
+            };
+            $collect_existing_document_names($value);
+            $existing_document_names = array_values(array_unique($existing_document_names));
+            ?>
             <div class="acl_shortcode_apa_dropzone acl_shortcode_div" data-apa-dropzone>
                 <input
                     class="acl_shortcode_apa_file_input"
@@ -177,12 +202,18 @@ $render_input = static function (
                 <strong><?php esc_html_e('Faites glisser le fichier ici', 'plugin-apa-agadev'); ?></strong>
                 <span data-apa-file-summary>
                     <?php echo $has_existing_file
-                        ? esc_html__('Un document est déjà enregistré dans ce brouillon.', 'plugin-apa-agadev')
+                        ? esc_html__('Un document est déjà enregistré.', 'plugin-apa-agadev')
                         : esc_html__('ou cliquez pour sélectionner un fichier', 'plugin-apa-agadev'); ?>
                 </span>
                 <small><?php esc_html_e('PDF, JPG ou PNG — 5 Mo maximum par fichier.', 'plugin-apa-agadev'); ?></small>
                 <?php if ($has_existing_file) : ?>
-                    <small class="acl_shortcode_apa_existing_document"><?php esc_html_e('Le document existant sera conservé. Son remplacement n’est pas encore disponible.', 'plugin-apa-agadev'); ?></small>
+                    <div class="acl_shortcode_apa_existing_document" aria-label="<?php echo esc_attr(__('Document déjà joint', 'plugin-apa-agadev')); ?>">
+                        <strong><?php esc_html_e('Document déjà joint', 'plugin-apa-agadev'); ?></strong>
+                        <?php foreach ($existing_document_names as $document_name) : ?>
+                            <span><?php echo esc_html($document_name); ?></span>
+                        <?php endforeach; ?>
+                        <small><?php esc_html_e('Il sera conservé si vous enregistrez de nouveau ce brouillon.', 'plugin-apa-agadev'); ?></small>
+                    </div>
                 <?php endif; ?>
             </div>
         <?php else : ?>
@@ -333,6 +364,7 @@ $render_benefits = static function (
         <form method="post" enctype="multipart/form-data" class="acl_shortcode_sections acl_shortcode_div" data-apa-step-form>
             <?php wp_nonce_field('apa_agadev_create_agreement', 'apa_agadev_nonce'); ?>
             <input type="hidden" name="apa_agadev_action" value="save_agreement">
+            <input type="hidden" name="apa_agadev_current_step" value="0" data-apa-current-step-input>
             <?php if ($is_editing) : ?>
                 <input type="hidden" name="apa_agadev_agreement_id" value="<?php echo esc_attr((string) $editing_agreement_id); ?>">
             <?php endif; ?>

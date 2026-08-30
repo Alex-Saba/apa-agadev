@@ -102,6 +102,136 @@ final class AgreementSubmissionTest extends TestCase
         ], $payload['genetic_resources']['resources']);
     }
 
+    public function testDraftRequiresVisitedSectionsButAllowsFutureSectionsToRemainEmpty(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $validate = Closure::bind(
+            static fn (
+                ShortcodeService $target,
+                array $submitted,
+                array $catalog,
+                int $currentStep
+            ): string => $target->validateDraftProgress($submitted, $catalog, $currentStep),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'first' => [
+                'title' => 'Première section',
+                'fields' => ['name' => ['type' => 'text', 'label' => 'Nom', 'required' => true]],
+            ],
+            'second' => [
+                'title' => 'Deuxième section',
+                'fields' => ['email' => ['type' => 'email', 'label' => 'Email', 'required' => true]],
+            ],
+        ]];
+
+        self::assertSame('', $validate($service, ['first' => ['name' => 'Ada']], $catalog, 0));
+
+        $error = $validate($service, ['first' => ['name' => 'Ada']], $catalog, 1);
+        self::assertStringContainsString('Deuxième section', $error);
+        self::assertStringContainsString('Email', $error);
+    }
+
+    public function testDraftValidatesRequiredRepeaterChildrenAndMultiselects(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $validate = Closure::bind(
+            static fn (ShortcodeService $target, array $submitted, array $catalog): string =>
+                $target->validateDraftProgress($submitted, $catalog, 0),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'providers' => [
+                'title' => 'Fournisseurs',
+                'fields' => [
+                    'providers' => [
+                        'type' => 'repeater',
+                        'required' => true,
+                        'label' => 'Fournisseurs',
+                        'fields' => [
+                            'name' => ['type' => 'text', 'label' => 'Nom', 'required' => true],
+                            'roles' => ['type' => 'multiselect', 'label' => 'Rôles', 'required' => true],
+                        ],
+                    ],
+                ],
+            ],
+        ]];
+
+        self::assertStringContainsString('Nom', $validate($service, [
+            'providers' => ['providers' => [['name' => '', 'roles' => ['collector']]]],
+        ], $catalog));
+        self::assertStringContainsString('Rôles', $validate($service, [
+            'providers' => ['providers' => [['name' => 'Association', 'roles' => []]]],
+        ], $catalog));
+        self::assertSame('', $validate($service, [
+            'providers' => ['providers' => [['name' => 'Association', 'roles' => ['collector']]]],
+        ], $catalog));
+    }
+
+    public function testDraftAcceptsUploadedOrPreviouslyStoredRequiredDocuments(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $validate = Closure::bind(
+            static fn (
+                ShortcodeService $target,
+                array $submitted,
+                array $catalog,
+                array $manifest = [],
+                array $existing = []
+            ): string => $target->validateDraftProgress($submitted, $catalog, 0, $manifest, $existing),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'providers' => [
+                'title' => 'Fournisseurs',
+                'fields' => [
+                    'providers' => [
+                        'type' => 'repeater',
+                        'required' => true,
+                        'fields' => [
+                            'name' => ['type' => 'text', 'required' => true],
+                            'identification' => ['type' => 'file', 'label' => 'Identification', 'required' => true],
+                        ],
+                    ],
+                ],
+            ],
+        ]];
+        $submitted = ['providers' => ['providers' => [['name' => 'Association']]]];
+
+        self::assertStringContainsString('Identification', $validate($service, $submitted, $catalog));
+        self::assertSame('', $validate($service, $submitted, $catalog, [[
+            'path' => 'providers.0.identification',
+            'multiple' => false,
+        ]]));
+        self::assertSame('', $validate($service, $submitted, $catalog, [], [
+            'providers' => ['providers' => [[
+                'identification' => ['name' => 'identification.pdf', 'document_uuid' => 'document-uuid'],
+            ]]],
+        ]));
+    }
+
+    public function testDraftButtonsUseStepValidationAndPostTheCurrentStep(): void
+    {
+        $template = file_get_contents(PLUGIN_APA_AGADEV_PATH . 'templates/agreement-form.php');
+        $javascript = file_get_contents(PLUGIN_APA_AGADEV_PATH . 'assets/apa-agadev.js');
+        $stylesheet = file_get_contents(PLUGIN_APA_AGADEV_PATH . 'assets/apa-agadev.css');
+
+        self::assertIsString($template);
+        self::assertIsString($javascript);
+        self::assertIsString($stylesheet);
+        // Native form validation would also inspect required controls in hidden
+        // future steps; the JavaScript and PHP validators intentionally scope it.
+        self::assertSame(2, substr_count($template, 'formnovalidate data-apa-save-draft'));
+        self::assertStringContainsString('name="apa_agadev_current_step"', $template);
+        self::assertStringContainsString('data-apa-required-group', $template);
+        self::assertStringContainsString('dataset.apaFieldError', $javascript);
+        self::assertStringContainsString("setAttribute('aria-invalid', 'true')", $javascript);
+        self::assertStringContainsString('.acl_shortcode_apa_field_error', $stylesheet);
+    }
+
     public function testProviderTypeKeepsTheTechnicalValueSubmittedByTheForm(): void
     {
         $service = new ShortcodeService(new MaivouDataService());
@@ -306,11 +436,25 @@ final class AgreementSubmissionTest extends TestCase
         $providerRows = [[
             'type' => 'community_association',
             'name' => 'Association locale',
+            'identification' => [
+                'name' => 'identification.pdf',
+                'document_uuid' => '740b2a78-29c3-4382-8f54-aa15d02e325c',
+            ],
         ]];
 
         self::assertSame([
             'providers' => ['providers' => $providerRows],
         ], $restore($service, ['providers' => $providerRows], $catalog));
+    }
+
+    public function testAgreementFormDisplaysTheStoredDocumentName(): void
+    {
+        $template = file_get_contents(PLUGIN_APA_AGADEV_PATH . 'templates/agreement-form.php');
+
+        self::assertIsString($template);
+        self::assertStringContainsString('Document déjà joint', $template);
+        self::assertStringContainsString('$existing_document_names', $template);
+        self::assertStringContainsString('Il sera conservé si vous enregistrez de nouveau ce brouillon.', $template);
     }
 
     public function testProviderDraftUpdatePreservesItsIdentificationDocument(): void

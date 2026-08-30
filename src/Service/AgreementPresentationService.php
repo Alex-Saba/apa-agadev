@@ -52,8 +52,134 @@ final class AgreementPresentationService
                 (string) ($user['firstname'] ?? ''),
                 (string) ($user['lastname'] ?? ''),
             ]))),
+            'documents' => $this->agreementDocuments($agreement),
             'sections' => $sections,
         ];
+    }
+
+    /**
+     * Extracts only display-safe metadata from documents attached to the
+     * agreement. Storage identifiers deliberately stay outside the view model.
+     *
+     * @param array<string, mixed> $agreement
+     * @return list<array{name:string,mime_type:string,size:string,context:string}>
+     */
+    private function agreementDocuments(array $agreement): array
+    {
+        $documents = [];
+
+        foreach ([
+            'genetic_resources',
+            'traditional_knowledge',
+            'providers',
+            'project',
+            'benefit_sharing',
+            'additional_information',
+            'additional_documents',
+            'applicant_declaration',
+        ] as $root) {
+            if (array_key_exists($root, $agreement)) {
+                $this->collectDocuments($agreement[$root], $root, $documents);
+            }
+        }
+
+        return $documents;
+    }
+
+    /**
+     * @param mixed $value
+     * @param list<array{name:string,mime_type:string,size:string,context:string}> $documents
+     */
+    private function collectDocuments($value, string $fieldKey, array &$documents): void
+    {
+        if (is_array($value) && $this->isDocumentReference($value)) {
+            $name = is_scalar($value['name'] ?? null) ? trim((string) $value['name']) : '';
+
+            if ($name !== '') {
+                $documents[] = [
+                    'name' => $name,
+                    'mime_type' => is_scalar($value['mime_type'] ?? null)
+                        ? trim((string) $value['mime_type'])
+                        : '',
+                    'size' => $this->formatFileSize($value['size'] ?? null),
+                    'context' => $this->documentContext($fieldKey),
+                ];
+            }
+
+            return;
+        }
+
+        // Older agreements may contain only the original filename. Keep that
+        // useful label without exposing an UUID or treating ordinary text as a file.
+        if (is_scalar($value) && $this->isLegacyDocumentField($fieldKey, (string) $value)) {
+            $documents[] = [
+                'name' => trim((string) $value),
+                'mime_type' => '',
+                'size' => '',
+                'context' => $this->documentContext($fieldKey),
+            ];
+
+            return;
+        }
+
+        if (! is_array($value)) {
+            return;
+        }
+
+        foreach ($value as $key => $child) {
+            $childKey = is_string($key) ? $key : $fieldKey;
+            $this->collectDocuments($child, $childKey, $documents);
+        }
+    }
+
+    /** @param array<int|string, mixed> $value */
+    private function isDocumentReference(array $value): bool
+    {
+        return is_scalar($value['name'] ?? null)
+            && trim((string) $value['name']) !== ''
+            && (
+                array_key_exists('document_uuid', $value)
+                || array_key_exists('mime_type', $value)
+                || array_key_exists('size', $value)
+            );
+    }
+
+    private function isLegacyDocumentField(string $fieldKey, string $value): bool
+    {
+        if (! in_array($fieldKey, ['identification', 'project_summary_attachment', 'attached_document'], true)) {
+            return false;
+        }
+
+        return 1 === preg_match('/\.(?:pdf|jpe?g|png)$/i', trim($value));
+    }
+
+    private function documentContext(string $fieldKey): string
+    {
+        return [
+            'identification' => __('Identification du fournisseur', 'plugin-apa-agadev'),
+            'project_summary_attachment' => __('Document du projet', 'plugin-apa-agadev'),
+            'attached_document' => __('Document complémentaire', 'plugin-apa-agadev'),
+        ][$fieldKey] ?? __('Document joint', 'plugin-apa-agadev');
+    }
+
+    /** @param mixed $size */
+    private function formatFileSize($size): string
+    {
+        if (! is_numeric($size) || (int) $size <= 0) {
+            return '';
+        }
+
+        $bytes = (int) $size;
+
+        if ($bytes >= 1024 * 1024) {
+            return number_format($bytes / (1024 * 1024), 1, ',', ' ') . ' Mo';
+        }
+
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 1, ',', ' ') . ' Ko';
+        }
+
+        return $bytes . ' o';
     }
 
     /**
