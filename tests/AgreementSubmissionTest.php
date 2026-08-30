@@ -132,6 +132,77 @@ final class AgreementSubmissionTest extends TestCase
         self::assertArrayNotHasKey('providers', $payload['providers'][0]);
     }
 
+    public function testProviderDraftRowsAreRestoredToTheFormShape(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $restore = Closure::bind(
+            static fn (ShortcodeService $target, array $agreement, array $catalog): array =>
+                $target->agreementFormValues($agreement, $catalog),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'providers' => ['subsections' => [
+                'provider_identification' => ['fields' => [
+                    'providers' => [
+                        'type' => 'repeater',
+                        'fields' => [
+                            'type' => ['type' => 'select'],
+                            'name' => ['type' => 'text'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]];
+        $providerRows = [[
+            'type' => 'community_association',
+            'name' => 'Association locale',
+        ]];
+
+        self::assertSame([
+            'providers' => ['providers' => $providerRows],
+        ], $restore($service, ['providers' => $providerRows], $catalog));
+    }
+
+    public function testProviderDraftUpdatePreservesItsIdentificationDocument(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $preserve = Closure::bind(
+            static fn (ShortcodeService $target, array $payload, array $existing, array $catalog): array =>
+                $target->preserveDocumentValues($payload, $existing, $catalog),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'providers' => ['subsections' => [
+                'provider_identification' => ['fields' => [
+                    'providers' => [
+                        'type' => 'repeater',
+                        'fields' => [
+                            'type' => ['type' => 'select'],
+                            'name' => ['type' => 'text'],
+                            'identification' => ['type' => 'file'],
+                        ],
+                    ],
+                ]],
+            ]],
+        ]];
+        $payload = ['providers' => [[
+            'type' => 'individual',
+            'name' => 'Fournisseur',
+        ]]];
+        $document = ['id' => 42, 'name' => 'identification.pdf'];
+        $existing = ['providers' => [[
+            'type' => 'individual',
+            'name' => 'Fournisseur',
+            'identification' => $document,
+        ]]];
+
+        $result = $preserve($service, $payload, $existing, $catalog);
+
+        self::assertSame($document, $result['providers'][0]['identification']);
+    }
+
     public function testWordPressSubmissionCanBuildAnIncompleteDraft(): void
     {
         $service = new ShortcodeService(new MaivouDataService());

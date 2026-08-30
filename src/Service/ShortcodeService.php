@@ -609,7 +609,11 @@ final class ShortcodeService
 
         foreach ($sections as $sectionKey => $section) {
             if (is_string($sectionKey) && is_array($section) && is_array($agreement[$sectionKey] ?? null)) {
-                $values[$sectionKey] = $agreement[$sectionKey];
+                // Maivou stores providers directly as a root list, while the
+                // catalog-driven form nests that repeater inside its section.
+                $values[$sectionKey] = 'providers' === $sectionKey
+                    ? ['providers' => $agreement[$sectionKey]]
+                    : $agreement[$sectionKey];
             }
         }
 
@@ -635,6 +639,30 @@ final class ShortcodeService
             }
 
             $existingSection = is_array($existing[$sectionKey] ?? null) ? $existing[$sectionKey] : [];
+
+            if ('providers' === $sectionKey) {
+                // Restore the form-shaped wrapper temporarily so documents
+                // nested in provider rows can be preserved before the API PUT.
+                $providerPayload = ['providers' => $payload[$sectionKey]];
+                $providerExisting = ['providers' => $existingSection];
+
+                foreach ((array) ($section['subsections'] ?? []) as $subsection) {
+                    if (is_array($subsection)) {
+                        $providerPayload = $this->preserveDefinedDocuments(
+                            $providerPayload,
+                            $providerExisting,
+                            $subsection['fields'] ?? []
+                        );
+                    }
+                }
+
+                $payload[$sectionKey] = is_array($providerPayload['providers'] ?? null)
+                    ? $providerPayload['providers']
+                    : $payload[$sectionKey];
+
+                continue;
+            }
+
             $payload[$sectionKey] = $this->preserveDefinedDocuments(
                 $payload[$sectionKey],
                 $existingSection,
