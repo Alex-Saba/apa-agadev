@@ -77,16 +77,22 @@ $is_list = static function (array $value): bool {
     return $value !== [] && array_keys($value) === range(0, count($value) - 1);
 };
 
-$field_options = static function (array $field) use ($remote_options): array {
+$field_option_data = static function (array $field) use ($remote_options): array {
     $endpoint = isset($field['optionsEndpoint']) ? (string) $field['optionsEndpoint'] : '';
 
     // Maivou may resolve a select with both an empty `options` array and an
     // `optionsEndpoint`; in that case the endpoint remains the source of truth.
     if ('' === $endpoint) {
-        return AgreementFormOptionNormalizer::normalize($field['options'] ?? []);
+        $items = $field['options'] ?? [];
+    } else {
+        $items = $remote_options[$endpoint] ?? [];
     }
 
-    return AgreementFormOptionNormalizer::normalize($remote_options[$endpoint] ?? []);
+    return [
+        'endpoint' => $endpoint,
+        'items' => $items,
+        'options' => AgreementFormOptionNormalizer::normalize($items, $endpoint),
+    ];
 };
 
 $render_input = static function (
@@ -94,12 +100,13 @@ $render_input = static function (
     string $key,
     array $field,
     $value
-) use ($field_options): void {
+) use ($field_option_data): void {
     $type = (string) ($field['type'] ?? 'text');
     $label = (string) ($field['label'] ?? $key);
     $required = ! empty($field['required']);
     $id = 'apa-' . substr(md5($name), 0, 12);
-    $options = $field_options($field);
+    $option_data = $field_option_data($field);
+    $options = $option_data['options'];
     $width_class = [
         '1/2' => 'acl_shortcode_apa_field--half',
         '1/3' => 'acl_shortcode_apa_field--third',
@@ -118,7 +125,7 @@ $render_input = static function (
         <?php if ('textarea' === $type) : ?>
             <textarea class="acl_shortcode_textarea" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo $required ? ' required' : ''; ?>><?php echo esc_textarea((string) $value); ?></textarea>
         <?php elseif ('select' === $type) : ?>
-            <?php $selected_values = is_array($value) ? array_map('strval', $value) : [(string) $value]; ?>
+            <?php $selected_values = AgreementFormOptionNormalizer::normalizeSelected($value, $option_data['items'], $option_data['endpoint']); ?>
             <select class="acl_shortcode_select" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo $required ? ' required' : ''; ?>>
                 <option class="acl_shortcode_option" value=""><?php esc_html_e('Sélectionner', 'plugin-apa-agadev'); ?></option>
                 <?php foreach ($options as $option_value => $option_label) : ?>
@@ -126,7 +133,7 @@ $render_input = static function (
                 <?php endforeach; ?>
             </select>
         <?php elseif ('multiselect' === $type) : ?>
-            <?php $selected_values = is_array($value) ? array_map('strval', $value) : [(string) $value]; ?>
+            <?php $selected_values = AgreementFormOptionNormalizer::normalizeSelected($value, $option_data['items'], $option_data['endpoint']); ?>
             <div class="acl_shortcode_apa_choices acl_shortcode_div" role="group" aria-labelledby="<?php echo esc_attr($id); ?>-label"<?php echo $required ? ' aria-required="true"' : ''; ?>>
                 <?php foreach ($options as $option_value => $option_label) : ?>
                     <?php $option_id = $id . '-' . substr(md5((string) $option_value), 0, 8); ?>

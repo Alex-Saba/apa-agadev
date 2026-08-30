@@ -91,16 +91,118 @@ final class AgreementFormOptionNormalizerTest extends TestCase
         ]));
     }
 
-    public function testZoneUuidUsesItsGeographicNamesAsVisibleLabel(): void
+    public function testProductEndpointUsesUuidInsteadOfCode(): void
     {
         self::assertSame([
-            '109a4b2b-9cd4-44ff-a7a9-d79a9e8d29bd' => 'Estuaire — Komo-Mondah — Ntoum',
+            '00000000-0000-4000-8000-000000000301' => 'Résine d’Okoumé',
         ], AgreementFormOptionNormalizer::normalize([[
+            'id' => 12,
+            'uuid' => '00000000-0000-4000-8000-000000000301',
+            'code' => 'RES-001',
+            'name' => 'Résine d’Okoumé',
+        ]], '/api/products'));
+    }
+
+    public function testZoneEndpointUsesNumericIdAndGeographicLabel(): void
+    {
+        self::assertSame([
+            '42' => 'Estuaire — Komo-Mondah — Ntoum',
+        ], AgreementFormOptionNormalizer::normalize([[
+            'id' => 42,
             'uuid' => '109a4b2b-9cd4-44ff-a7a9-d79a9e8d29bd',
             'province_name' => 'Estuaire',
             'department_name' => 'Komo-Mondah',
             'department_capital_name' => 'Ntoum',
-        ]]));
+        ]], '/api/zones'));
+    }
+
+    public function testLegacyIdentifiersResolveToCanonicalEndpointValues(): void
+    {
+        $product = [[
+            'id' => 12,
+            'uuid' => 'product-uuid',
+            'code' => 'RES-001',
+            'name' => 'Résine d’Okoumé',
+        ]];
+        $zone = [[
+            'id' => 42,
+            'uuid' => 'zone-uuid',
+            'province_name' => 'Estuaire',
+            'department_name' => 'Komo-Mondah',
+        ]];
+
+        self::assertSame(
+            ['product-uuid'],
+            AgreementFormOptionNormalizer::normalizeSelected('RES-001', $product, '/api/products')
+        );
+        self::assertSame(
+            ['42'],
+            AgreementFormOptionNormalizer::normalizeSelected('zone-uuid', $zone, '/api/zones')
+        );
+    }
+
+    public function testLegacyDraftValuesRenderAsSelectedCanonicalOptions(): void
+    {
+        $catalog = ['sections' => [
+            'genetic_resources' => [
+                'title' => 'Identification des ressources génétiques',
+                'fields' => [
+                    'resources' => [
+                        'type' => 'repeater',
+                        'label' => 'Ressources génétiques',
+                        'fields' => [
+                            'product' => [
+                                'type' => 'select',
+                                'label' => 'Produit',
+                                'optionsEndpoint' => '/api/products',
+                            ],
+                        ],
+                    ],
+                    'collection_area_entries' => [
+                        'type' => 'repeater',
+                        'label' => 'Zones prévues de collecte',
+                        'fields' => [
+                            'origin' => [
+                                'type' => 'select',
+                                'label' => 'Origine',
+                                'optionsEndpoint' => '/api/zones',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]];
+        $remote_options = [
+            '/api/products' => [[
+                'id' => 12,
+                'uuid' => 'product-uuid',
+                'code' => 'RES-001',
+                'name' => 'Résine d’Okoumé',
+            ]],
+            '/api/zones' => [[
+                'id' => 42,
+                'uuid' => 'zone-uuid',
+                'province_name' => 'Estuaire',
+                'department_name' => 'Komo-Mondah',
+            ]],
+        ];
+        $submitted = ['genetic_resources' => [
+            'resources' => [['product' => 'RES-001']],
+            'collection_area_entries' => [['origin' => 'zone-uuid']],
+        ]];
+        $submission = null;
+        $submission_intent = '';
+        $editing_agreement_id = 42;
+        $layout = 'modal';
+
+        ob_start();
+        require PLUGIN_APA_AGADEV_PATH . 'templates/agreement-form.php';
+        $html = (string) ob_get_clean();
+
+        self::assertStringContainsString('value="product-uuid" selected', $html);
+        self::assertStringContainsString('value="42" selected', $html);
+        self::assertStringNotContainsString('value="RES-001"', $html);
+        self::assertStringNotContainsString('value="zone-uuid"', $html);
     }
 
     public function testProviderTypeRendersItsTechnicalValueInTheFormHtml(): void

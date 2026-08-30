@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.8.1
+Stable tag: 2026.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.8.2 =
+* Retablissement des identifiants techniques attendus par Maivou pour les produits et les zones du formulaire APA.
+* Compatibilite de restitution avec les brouillons contenant les anciens codes produit ou UUID de zone.
+* Protection des options statiques, notamment le type de fournisseur, contre les regressions de normalisation.
 
 = 2026.8.1 =
 * Correction de la restitution des fournisseurs lors de la reouverture d'un brouillon APA.

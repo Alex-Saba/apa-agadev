@@ -132,6 +132,50 @@ final class AgreementSubmissionTest extends TestCase
         self::assertArrayNotHasKey('providers', $payload['providers'][0]);
     }
 
+    public function testGeneticResourceTechnicalIdentifiersRemainCanonicalDuringSubmission(): void
+    {
+        $service = new ShortcodeService(new MaivouDataService());
+        $normalize = Closure::bind(
+            static fn (ShortcodeService $target, array $submitted, array $catalog, string $status): array =>
+                $target->normalizeAgreement($submitted, $catalog, $status),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'genetic_resources' => ['subsections' => [
+                'resource_identification' => ['fields' => [
+                    'resources' => ['type' => 'repeater', 'fields' => [
+                        'product' => ['type' => 'select'],
+                        'quantity' => ['type' => 'number'],
+                    ]],
+                ]],
+                'collection_areas' => ['fields' => [
+                    'collection_area_entries' => ['type' => 'repeater', 'fields' => [
+                        'sample_reference' => ['type' => 'select'],
+                        'origin' => ['type' => 'select'],
+                    ]],
+                ]],
+            ]],
+        ]];
+
+        $payload = $normalize($service, [
+            'genetic_resources' => [
+                'resources' => [[
+                    'product' => 'product-uuid',
+                    'quantity' => '20000',
+                ]],
+                'collection_area_entries' => [[
+                    'sample_reference' => 'product-uuid',
+                    'origin' => '42',
+                ]],
+            ],
+        ], $catalog, 'draft');
+
+        self::assertSame('product-uuid', $payload['genetic_resources']['resources'][0]['product']);
+        self::assertSame('product-uuid', $payload['genetic_resources']['collection_area_entries'][0]['sample_reference']);
+        self::assertSame('42', $payload['genetic_resources']['collection_area_entries'][0]['origin']);
+    }
+
     public function testProviderDraftRowsAreRestoredToTheFormShape(): void
     {
         $service = new ShortcodeService(new MaivouDataService());
