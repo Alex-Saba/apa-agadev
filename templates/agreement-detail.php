@@ -182,11 +182,4 @@ $display_value = static function ($value): string {
         <?php endforeach; ?>
         </div>
     </div>
-
-    <?php if ((string) ($agreement_detail['signature'] ?? '') !== '') : ?>
-        <section class="acl_shortcode_agreement_signature">
-            <h4><?php esc_html_e('Signature numérique', 'plugin-apa-agadev'); ?></h4>
-            <code><?php echo esc_html((string) $agreement_detail['signature']); ?></code>
-        </section>
-    <?php endif; ?>
 </article>
