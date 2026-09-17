@@ -48,7 +48,7 @@ final class AgreementFormOptionNormalizer
     /**
      * Resolves stored identifiers to the canonical value expected by Maivou.
      *
-     * Older drafts may contain a product code or a zone UUID written by a
+     * Older drafts may contain a product code or a numeric zone ID written by a
      * previous plugin version. Matching every known identifier lets the form
      * select the corresponding option and submit the canonical value again.
      *
@@ -140,7 +140,7 @@ final class AgreementFormOptionNormalizer
         }
 
         if ('/api/zones' === $endpoint) {
-            return ['value', 'id', 'uuid', 'code', 'key'];
+            return ['value', 'uuid', 'id', 'code', 'key'];
         }
 
         return ['value', 'code', 'uuid', 'id', 'key'];

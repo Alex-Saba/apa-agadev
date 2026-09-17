@@ -401,14 +401,14 @@ final class AgreementSubmissionTest extends TestCase
                 ]],
                 'collection_area_entries' => [[
                     'sample_reference' => 'product-uuid',
-                    'origin' => '42',
+                    'origin' => 'zone-uuid',
                 ]],
             ],
         ], $catalog, 'draft');
 
         self::assertSame('product-uuid', $payload['genetic_resources']['resources'][0]['product']);
         self::assertSame('product-uuid', $payload['genetic_resources']['collection_area_entries'][0]['sample_reference']);
-        self::assertSame('42', $payload['genetic_resources']['collection_area_entries'][0]['origin']);
+        self::assertSame('zone-uuid', $payload['genetic_resources']['collection_area_entries'][0]['origin']);
     }
 
     public function testProviderDraftRowsAreRestoredToTheFormShape(): void

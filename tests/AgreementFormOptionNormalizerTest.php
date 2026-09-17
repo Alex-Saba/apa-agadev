@@ -103,10 +103,10 @@ final class AgreementFormOptionNormalizerTest extends TestCase
         ]], '/api/products'));
     }
 
-    public function testZoneEndpointUsesNumericIdAndGeographicLabel(): void
+    public function testZoneEndpointUsesUuidAndGeographicLabel(): void
     {
         self::assertSame([
-            '42' => 'Estuaire — Komo-Mondah — Ntoum',
+            '109a4b2b-9cd4-44ff-a7a9-d79a9e8d29bd' => 'Estuaire — Komo-Mondah — Ntoum',
         ], AgreementFormOptionNormalizer::normalize([[
             'id' => 42,
             'uuid' => '109a4b2b-9cd4-44ff-a7a9-d79a9e8d29bd',
@@ -136,7 +136,11 @@ final class AgreementFormOptionNormalizerTest extends TestCase
             AgreementFormOptionNormalizer::normalizeSelected('RES-001', $product, '/api/products')
         );
         self::assertSame(
-            ['42'],
+            ['zone-uuid'],
+            AgreementFormOptionNormalizer::normalizeSelected('42', $zone, '/api/zones')
+        );
+        self::assertSame(
+            ['zone-uuid'],
             AgreementFormOptionNormalizer::normalizeSelected('zone-uuid', $zone, '/api/zones')
         );
     }
@@ -188,7 +192,7 @@ final class AgreementFormOptionNormalizerTest extends TestCase
         ];
         $submitted = ['genetic_resources' => [
             'resources' => [['product' => 'RES-001']],
-            'collection_area_entries' => [['origin' => 'zone-uuid']],
+            'collection_area_entries' => [['origin' => '42']],
         ]];
         $submission = null;
         $submission_intent = '';
@@ -200,9 +204,9 @@ final class AgreementFormOptionNormalizerTest extends TestCase
         $html = (string) ob_get_clean();
 
         self::assertMatchesRegularExpression('/value="product-uuid"[^>]* selected/', $html);
-        self::assertStringContainsString('value="42" selected', $html);
+        self::assertStringContainsString('value="zone-uuid" selected', $html);
         self::assertStringNotContainsString('value="RES-001"', $html);
-        self::assertStringNotContainsString('value="zone-uuid"', $html);
+        self::assertDoesNotMatchRegularExpression('/<option[^>]+value="42"/', $html);
     }
 
     public function testProductUnitsRenderForEachDraftRowAndEmptyTemplate(): void
