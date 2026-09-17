@@ -95,12 +95,27 @@ $field_option_data = static function (array $field) use ($remote_options): array
     ];
 };
 
+$product_units = [];
+foreach ((array) ($remote_options['/api/products'] ?? []) as $product) {
+    $product = is_object($product) ? get_object_vars($product) : $product;
+    if (! is_array($product)) {
+        continue;
+    }
+    // Reuse the select's canonical identifiers so legacy draft codes resolve alike.
+    $product_options = AgreementFormOptionNormalizer::normalize([$product], '/api/products');
+    $unit = $product['assigned_packaging_unit'] ?? null;
+    $unit_labels = ['kg' => 'kg', 'g' => 'g', 'l' => 'l', 'ml' => 'ml', 'piece' => __('pièce', 'plugin-apa-agadev')];
+    foreach ($product_options as $product_value => $product_label) {
+        $product_units[$product_value] = is_string($unit) ? ($unit_labels[$unit] ?? '') : '';
+    }
+}
+
 $render_input = static function (
     string $name,
     string $key,
     array $field,
     $value
-) use ($field_option_data): void {
+) use ($field_option_data, $product_units): void {
     $type = (string) ($field['type'] ?? 'text');
     $label = (string) ($field['label'] ?? $key);
     $required = ! empty($field['required']);
@@ -117,6 +132,9 @@ $render_input = static function (
         <?php if ('checkbox' !== $type) : ?>
             <label class="acl_shortcode_label"<?php if ('multiselect' === $type) : ?> id="<?php echo esc_attr($id); ?>-label"<?php else : ?> for="<?php echo esc_attr($id); ?>"<?php endif; ?>>
                 <?php echo esc_html($label); ?>
+                <?php if (array_key_exists('_product_unit_label', $field)) : ?>
+                    <span data-apa-product-unit aria-live="polite" data-apa-unit-missing="<?php echo esc_attr(__('Unité non renseignée', 'plugin-apa-agadev')); ?>"><?php echo esc_html($field['_product_unit_label']); ?></span>
+                <?php endif; ?>
                 <?php if ($required) : ?><span class="acl_shortcode_required acl_shortcode_span" aria-hidden="true"> *</span><?php endif; ?>
             </label>
         <?php endif; ?>
@@ -126,10 +144,10 @@ $render_input = static function (
             <textarea class="acl_shortcode_textarea" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo $required ? ' required' : ''; ?>><?php echo esc_textarea((string) $value); ?></textarea>
         <?php elseif ('select' === $type) : ?>
             <?php $selected_values = AgreementFormOptionNormalizer::normalizeSelected($value, $option_data['items'], $option_data['endpoint']); ?>
-            <select class="acl_shortcode_select" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo $required ? ' required' : ''; ?>>
+            <select class="acl_shortcode_select" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>"<?php echo '/api/products' === $option_data['endpoint'] && 'product' === $key ? ' data-apa-product-select' : ''; ?><?php echo $required ? ' required' : ''; ?>>
                 <option class="acl_shortcode_option" value=""><?php esc_html_e('Sélectionner', 'plugin-apa-agadev'); ?></option>
                 <?php foreach ($options as $option_value => $option_label) : ?>
-                    <option class="acl_shortcode_option" value="<?php echo esc_attr((string) $option_value); ?>"<?php echo in_array((string) $option_value, $selected_values, true) ? ' selected' : ''; ?>><?php echo esc_html((string) $option_label); ?></option>
+                    <option class="acl_shortcode_option" value="<?php echo esc_attr((string) $option_value); ?>"<?php if ('/api/products' === $option_data['endpoint']) : ?> data-apa-unit="<?php echo esc_attr($product_units[$option_value] ?? ''); ?>"<?php endif; ?><?php echo in_array((string) $option_value, $selected_values, true) ? ' selected' : ''; ?>><?php echo esc_html((string) $option_label); ?></option>
                 <?php endforeach; ?>
             </select>
         <?php elseif ('multiselect' === $type) : ?>
@@ -230,7 +248,7 @@ $render_fields = static function (
     array $fields,
     string $prefix,
     array $values
-) use (&$render_fields, $is_list, $render_input): void {
+) use (&$render_fields, $is_list, $render_input, $product_units, $remote_options): void {
     foreach ($fields as $key => $field) {
         if (! is_string($key) || ! is_array($field)) {
             continue;
@@ -245,6 +263,18 @@ $render_fields = static function (
         $value = $values[$key] ?? null;
 
         if ('repeater' !== $type) {
+            if ('quantity' === $key && '/api/products' === ($fields['product']['optionsEndpoint'] ?? '')) {
+                $selected_products = AgreementFormOptionNormalizer::normalizeSelected(
+                    $values['product'] ?? '',
+                    $remote_options['/api/products'] ?? [],
+                    '/api/products'
+                );
+                $selected_product = $selected_products[0] ?? '';
+                $unit = $product_units[$selected_product] ?? '';
+                $field['_product_unit_label'] = '' === $selected_product ? '' : '(' . (
+                    '' !== $unit ? $unit : __('Unité non renseignée', 'plugin-apa-agadev')
+                ) . ')';
+            }
             $render_input($name, $key, $field, $value);
             continue;
         }

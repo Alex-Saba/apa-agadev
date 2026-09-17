@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.8.4
+Stable tag: 2026.8.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,10 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.8.5 =
+* Affichage de l'unite de quantite selon le produit selectionne dans chaque ligne du formulaire APA, y compris a la reouverture d'un brouillon.
+* Indication explicite lorsque l'unite du produit n'est pas renseignee.
 
 = 2026.8.4 =
 * Journalisation des echecs des requetes API sans donnees sensibles ni en-tetes d'authentification.

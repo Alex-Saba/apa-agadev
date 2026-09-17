@@ -585,7 +585,22 @@
         }
     });
 
+    function updateProductUnit(select) {
+        // Each resource row owns its quantity; never update another row's unit.
+        var row = select.closest('[data-apa-repeater-row]');
+        var label = row ? row.querySelector('[data-apa-product-unit]') : null;
+        if (!label) {
+            return;
+        }
+        var option = select.options[select.selectedIndex];
+        var unit = option ? option.getAttribute('data-apa-unit') : '';
+        label.textContent = select.value ? '(' + (unit || label.getAttribute('data-apa-unit-missing')) + ')' : '';
+    }
+
     document.addEventListener('change', function (event) {
+        if (event.target.matches('[data-apa-product-select]')) {
+            updateProductUnit(event.target);
+        }
         if (event.target.matches('[data-apa-file-input]')) {
             updateFileSummary(event.target);
         }
@@ -668,6 +683,7 @@
     });
 
     function initializeStepForms() {
+        document.querySelectorAll('[data-apa-product-select]').forEach(updateProductUnit);
         document.querySelectorAll('[data-apa-step-form]').forEach(function (form) {
             showStep(form, 0, false);
         });

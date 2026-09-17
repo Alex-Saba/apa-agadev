@@ -199,10 +199,48 @@ final class AgreementFormOptionNormalizerTest extends TestCase
         require PLUGIN_APA_AGADEV_PATH . 'templates/agreement-form.php';
         $html = (string) ob_get_clean();
 
-        self::assertStringContainsString('value="product-uuid" selected', $html);
+        self::assertMatchesRegularExpression('/value="product-uuid"[^>]* selected/', $html);
         self::assertStringContainsString('value="42" selected', $html);
         self::assertStringNotContainsString('value="RES-001"', $html);
         self::assertStringNotContainsString('value="zone-uuid"', $html);
+    }
+
+    public function testProductUnitsRenderForEachDraftRowAndEmptyTemplate(): void
+    {
+        $catalog = ['sections' => ['genetic_resources' => ['fields' => [
+            'resources' => ['type' => 'repeater', 'fields' => [
+                'product' => ['type' => 'select', 'optionsEndpoint' => '/api/products'],
+                'quantity' => ['type' => 'number', 'label' => 'Quantité visée'],
+            ]],
+        ]]]];
+        $remote_options = ['/api/products' => [
+            ['uuid' => 'product-kg', 'code' => 'OLD-KG', 'name' => 'Résine', 'assigned_packaging_unit' => 'kg'],
+            ['uuid' => 'product-l', 'name' => 'Huile', 'assigned_packaging_unit' => 'l'],
+            ['uuid' => 'product-piece', 'name' => 'Graine', 'assigned_packaging_unit' => 'piece'],
+            ['uuid' => 'product-null', 'name' => 'Sans unité', 'assigned_packaging_unit' => null],
+            ['uuid' => 'product-missing', 'name' => 'Ancien produit'],
+        ]];
+        $submitted = ['genetic_resources' => ['resources' => [
+            ['product' => 'OLD-KG', 'quantity' => 12],
+            ['product' => 'product-l', 'quantity' => 3],
+            ['product' => 'product-piece', 'quantity' => 2],
+            ['product' => 'product-null', 'quantity' => 1],
+            ['product' => 'product-missing', 'quantity' => 4],
+        ]]];
+        $submission = null;
+        $submission_intent = '';
+        $editing_agreement_id = 42;
+        $layout = 'modal';
+        ob_start();
+        require PLUGIN_APA_AGADEV_PATH . 'templates/agreement-form.php';
+        $html = (string) ob_get_clean();
+
+        preg_match_all('/<span data-apa-product-unit[^>]*>(.*?)<\/span>/s', $html, $matches);
+        self::assertSame(['(kg)', '(l)', '(pièce)', '(Unité non renseignée)', '(Unité non renseignée)', ''], $matches[1]);
+        self::assertStringContainsString('value="product-kg" data-apa-unit="kg" selected', $html);
+        self::assertStringContainsString('data-apa-product-select', $html);
+        self::assertStringContainsString('value="12"', $html);
+        self::assertStringNotContainsString('name="assigned_packaging_unit"', $html);
     }
 
     public function testProviderTypeRendersItsTechnicalValueInTheFormHtml(): void
