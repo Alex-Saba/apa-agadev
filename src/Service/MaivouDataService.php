@@ -259,6 +259,16 @@ final class MaivouDataService
             );
         }
 
+        if (! $response['ok']) {
+            // Ne journaliser ni paramètres de requête, ni données, ni en-têtes d'authentification.
+            $path = parse_url((string) ($arguments['endpoint'] ?? ''), PHP_URL_PATH);
+            error_log('[APA Agadev] API request failed: ' . json_encode([
+                'method' => strtoupper((string) ($arguments['method'] ?? 'GET')),
+                'path' => is_string($path) ? $path : '',
+                'status' => (int) ($response['status'] ?? 500),
+            ], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE));
+        }
+
         return [
             'ok' => (bool) $response['ok'],
             'status' => (int) ($response['status'] ?? 500),
