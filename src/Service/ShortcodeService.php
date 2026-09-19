@@ -1021,7 +1021,9 @@ final class ShortcodeService
             $type = (string) ($definition['type'] ?? 'text');
 
             if (in_array($type, ['file', 'dropzone'], true)) {
-                if (! array_key_exists($key, $payload) && array_key_exists($key, $existing)) {
+                // A null placeholder means no new upload, not a request to delete
+                // the authenticated document already attached to this draft.
+                if (null === ($payload[$key] ?? null) && array_key_exists($key, $existing)) {
                     $payload[$key] = $existing[$key];
                 }
 
@@ -1165,6 +1167,11 @@ final class ShortcodeService
             }
 
             if (in_array($type, ['file', 'dropzone'], true)) {
+                // Uploads travel separately in the multipart manifest; Maivou
+                // replaces this placeholder when attaching a supplied file.
+                if (empty($definition['required'])) {
+                    $normalized[$key] = null;
+                }
                 continue;
             }
 

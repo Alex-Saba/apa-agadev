@@ -275,6 +275,7 @@ final class AgreementSubmissionTest extends TestCase
 
         self::assertSame([
             'type' => 'community_association',
+            'identification' => null,
             'name' => 'Association locale',
             'address' => 'Libreville, Gabon',
             'contact_person' => 'Arielle M.',
@@ -584,6 +585,60 @@ final class AgreementSubmissionTest extends TestCase
 
         self::assertSame('Autorisation', $payload['additional_documents']['title']);
         self::assertSame('document-uuid', $payload['additional_documents']['attached_document']);
+    }
+
+    public function testOptionalEmptyDocumentsAreNullInJsonMultipartAndUpdates(): void
+    {
+        $data = new MaivouDataService();
+        $service = new ShortcodeService($data);
+        $normalize = Closure::bind(
+            static fn (array $submitted, array $catalog): array =>
+                $service->normalizeAgreement($submitted, $catalog, 'draft'),
+            null,
+            ShortcodeService::class
+        );
+        $preserve = Closure::bind(
+            static fn (array $payload, array $existing, array $catalog): array =>
+                $service->preserveDocumentValues($payload, $existing, $catalog),
+            null,
+            ShortcodeService::class
+        );
+        $catalog = ['sections' => [
+            'project' => ['fields' => [
+                'attachment' => ['type' => 'file', 'required' => false],
+                'documents' => ['type' => 'dropzone'],
+                'required_document' => ['type' => 'file', 'required' => true],
+            ]],
+            'providers' => ['subsections' => ['identity' => ['fields' => [
+                'providers' => ['type' => 'repeater', 'fields' => [
+                    'name' => ['type' => 'text'],
+                    'identification' => ['type' => 'file'],
+                ]],
+            ]]]],
+        ]];
+        $payload = $normalize(['providers' => ['providers' => [['name' => 'Fournisseur']]]], $catalog);
+        self::assertSame(['attachment' => null, 'documents' => null], $payload['project']);
+        self::assertSame(['name' => 'Fournisseur', 'identification' => null], $payload['providers'][0]);
+        $data->createAgreement($payload);
+        self::assertSame($payload, $GLOBALS['apa_test_api_arguments']['body']);
+
+        $files = ['documents[0]' => ['path' => '/tmp/test.pdf', 'filename' => 'test.pdf', 'mime' => 'application/pdf']];
+        $manifest = [['path' => 'project.required_document', 'multiple' => false]];
+        $data->createAgreement($payload, $files, $manifest);
+        self::assertSame($payload, json_decode($GLOBALS['apa_test_api_arguments']['fields']['payload'], true));
+        self::assertSame($files, $GLOBALS['apa_test_api_arguments']['files']);
+        self::assertSame($manifest, json_decode($GLOBALS['apa_test_api_arguments']['fields']['document_manifest'], true));
+
+        $updated = $preserve($payload, [
+            'project' => ['attachment' => ['uuid' => 'existing-document']],
+            'providers' => [['name' => 'Fournisseur', 'identification' => 'existing-provider-document']],
+        ], $catalog);
+        $data->updateAgreement(31, $updated);
+        $sent = $GLOBALS['apa_test_api_arguments']['body'];
+        self::assertSame(['uuid' => 'existing-document'], $sent['project']['attachment']);
+        self::assertArrayHasKey('documents', $sent['project']);
+        self::assertNull($sent['project']['documents']);
+        self::assertSame('existing-provider-document', $sent['providers'][0]['identification']);
     }
 
     public function testMaivouDraftUpdateUsesTheAuthenticatedPutEndpoint(): void
