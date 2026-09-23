@@ -27,7 +27,7 @@ final class AgreementPdfServiceTest extends TestCase
         self::assertStringContainsString('_wpnonce=apa_agadev_download_agreement_pdf_42', $url);
     }
 
-    public function testItGeneratesAValidPdfFromDisplayValues(): void
+    public function testItGeneratesAPrintableViewFromDisplayValues(): void
     {
         $agreement = [
             'id' => 42,
@@ -87,17 +87,22 @@ final class AgreementPdfServiceTest extends TestCase
         ];
         $detail = (new AgreementPresentationService())->present($agreement);
         $service = new AgreementPdfService(new MaivouDataService());
-        $pdf = $service->renderPdf($detail);
+        $html = $service->renderPrintView($detail);
 
         // Allows explicit visual QA without leaving artifacts during normal tests.
-        $artifactPath = getenv('APA_PDF_ARTIFACT');
+        $artifactPath = getenv('APA_PRINT_ARTIFACT');
         if (is_string($artifactPath) && $artifactPath !== '') {
-            file_put_contents($artifactPath, $pdf);
+            file_put_contents($artifactPath, $html);
         }
 
-        self::assertStringStartsWith('%PDF-', $pdf);
-        self::assertGreaterThan(1000, strlen($pdf));
-        self::assertStringNotContainsString('00000000-0000-4000-8000-000000000301', $pdf);
+        self::assertStringContainsString('<!doctype html>', $html);
+        self::assertStringContainsString('Résine d’Okoumé', $html);
+        self::assertStringContainsString('Estuaire — Komo — Libreville', $html);
+        self::assertStringContainsString('window.print()', $html);
+        self::assertStringContainsString('@media print', $html);
+        self::assertStringContainsString('size: A4', $html);
+        self::assertStringContainsString('.print-toolbar { display: none !important; }', $html);
+        self::assertStringNotContainsString('00000000-0000-4000-8000-000000000301', $html);
     }
 
     public function testPdfTemplateEmbedsTheLocalAgadevLogo(): void
@@ -163,6 +168,37 @@ final class AgreementPdfServiceTest extends TestCase
         } catch (ApaAgadevWpDieException $exception) {
             self::assertSame(403, $exception->response);
             self::assertArrayNotHasKey('apa_test_api_arguments', $GLOBALS);
+        }
+    }
+
+    public function testPrintViewEscapesDisplayedContent(): void
+    {
+        $html = (new AgreementPdfService(new MaivouDataService()))->renderPrintView([
+            'code' => '<script>alert(1)</script>',
+            'holder' => '<img src=x onerror=alert(1)>',
+            'sections' => [],
+        ]);
+        self::assertStringNotContainsString('<script>alert(1)</script>', $html);
+        self::assertStringNotContainsString('<img src=x', $html);
+        self::assertStringContainsString('&lt;script&gt;', $html);
+    }
+
+    public function testPrintRequestHonorsMaivouAccessDenial(): void
+    {
+        $_GET = [
+            'apa_agadev_download' => '1',
+            'agreement_id' => '42',
+            '_wpnonce' => 'apa_agadev_download_agreement_pdf_42',
+        ];
+        $GLOBALS['apa_test_logged_in'] = true;
+        $GLOBALS['apa_test_api_response'] = ['ok' => false, 'status' => 403, 'data' => null, 'error' => 'Accès refusé'];
+        try {
+            (new AgreementPdfService(new MaivouDataService()))->handleDownload();
+            self::fail('Maivou access denial must prevent printing.');
+        } catch (ApaAgadevWpDieException $exception) {
+            self::assertSame(403, $exception->response);
+            self::assertSame('/agreements/42', $GLOBALS['apa_test_api_arguments']['endpoint']);
+            self::assertSame('user', $GLOBALS['apa_test_api_arguments']['auth']);
         }
     }
 

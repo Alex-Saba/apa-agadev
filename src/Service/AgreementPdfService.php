@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace PluginApaAgadev\Service;
 
-use Dompdf\Dompdf;
-use Dompdf\Options;
 use UnexpectedValueException;
 
 /**
- * Generates an authorized, up-to-date PDF for one APA agreement.
+ * Serves an authorized, up-to-date printable view for one APA agreement.
  */
 final class AgreementPdfService
 {
@@ -83,84 +81,30 @@ final class AgreementPdfService
 
         try {
             $detail = $this->presentation->present($response['data']);
-            $pdf = $this->renderPdf($detail);
+            $html = $this->renderPrintView($detail);
         } catch (UnexpectedValueException $exception) {
             $this->logInvalidPresentation($agreementId, $exception);
             $this->abort(__('La présentation détaillée de cette demande APA est indisponible.', 'plugin-apa-agadev'), 502);
         }
 
-        $reference = (string) ($detail['code'] ?: $agreementId);
-        $filename = sanitize_file_name('demande-apa-' . $reference . '.pdf');
-
+        // Private HTML is printed by the browser; do not generate or stream a PDF.
         nocache_headers();
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . strlen($pdf));
-        echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary PDF output.
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Content-Type: text/html; charset=UTF-8');
+        header('X-Content-Type-Options: nosniff');
+        header('Referrer-Policy: no-referrer');
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by the template.
         exit;
     }
 
     /**
-     * Generates the binary document from the same safe view model as HTML.
+     * Renders display values without a server-side PDF engine.
      *
      * @param array<string, mixed> $detail
      */
-    public function renderPdf(array $detail): string
+    public function renderPrintView(array $detail): string
     {
-        if (! class_exists(Dompdf::class)) {
-            throw new UnexpectedValueException('The PDF engine is unavailable.');
-        }
-
-        $options = new Options();
-        $options->set('defaultFont', 'DejaVu Sans');
-        $options->set('isRemoteEnabled', false);
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('tempDir', get_temp_dir());
-
-        $dompdf = new Dompdf($options);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->loadHtml($this->renderTemplate($detail), 'UTF-8');
-        $dompdf->render();
-        $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
-        $boldFont = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'bold');
-        $footerColor = [0.31, 0.37, 0.33];
-        $brandColor = [0.07, 0.24, 0.15];
-        $canvas = $dompdf->getCanvas();
-
-        // The official document footer is repeated consistently on every page.
-        $canvas->line(42, 797, 553, 797, [0.77, 0.84, 0.79], 0.6);
-
-        $canvas->page_text(
-            42,
-            806,
-            __('MAIVOU  ·  DEMANDE APA', 'plugin-apa-agadev'),
-            $boldFont,
-            7.5,
-            $brandColor
-        );
-        $canvas->page_text(
-            202,
-            806,
-            __('Document généré depuis les données enregistrées', 'plugin-apa-agadev'),
-            $font,
-            7.5,
-            $footerColor
-        );
-        $canvas->page_text(
-            520,
-            806,
-            __('Page {PAGE_NUM}', 'plugin-apa-agadev'),
-            $font,
-            7.5,
-            $footerColor
-        );
-        $pdf = $dompdf->output();
-
-        if (! is_string($pdf) || $pdf === '') {
-            throw new UnexpectedValueException('The generated PDF is empty.');
-        }
-
-        return $pdf;
+        return $this->renderTemplate($detail);
     }
 
     private static function nonceAction(int $agreementId): string

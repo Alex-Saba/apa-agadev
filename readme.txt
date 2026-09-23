@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.8.7
+Stable tag: 2026.8.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,12 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.8.8 =
+* Impression et enregistrement PDF des demandes APA via le navigateur, avec conservation des controles d'acces.
+* Harmonisation de la typographie avec le theme et ajustement de la presentation des fiches de lot.
+* Illustrations fixes pour les cartes zone de collecte, collecteur et acheteur ; retrait de leurs selecteurs d'image dynamiques.
+* Integration du footer Agadev aux fiches de lot et alignement horizontal des liens sociaux.
 
 = 2026.8.7 =
 * Transmission de null pour les champs documentaires facultatifs vides, en JSON comme en multipart.

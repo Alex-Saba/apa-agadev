@@ -66,7 +66,7 @@ $display_value = static function ($value): string {
 
     <div class="acl_shortcode_agreement_detail_actions acl_shortcode_div">
         <a class="acl_shortcode_agreement_back acl_shortcode_button_button" href="<?php echo esc_url($back_url); ?>"><?php esc_html_e('Retour à mes agréments', 'plugin-apa-agadev'); ?></a>
-        <a class="acl_shortcode_agreement_download acl_shortcode_button_button" href="<?php echo esc_url($download_url); ?>"><?php esc_html_e('Télécharger le PDF', 'plugin-apa-agadev'); ?></a>
+        <a class="acl_shortcode_agreement_download acl_shortcode_button_button" href="<?php echo esc_url($download_url); ?>"><?php esc_html_e('Imprimer / Enregistrer en PDF', 'plugin-apa-agadev'); ?></a>
     </div>
 
     <dl class="acl_shortcode_agreement_meta">

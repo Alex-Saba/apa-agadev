@@ -11,12 +11,6 @@ final class LotMediaService
 {
     public const META_PRODUCT_IMAGE = '_apa_agadev_product_image_id';
 
-    public const META_ZONE_IMAGE = '_apa_agadev_zone_image_id';
-
-    public const META_COLLECTOR_IMAGE = '_apa_agadev_collector_image_id';
-
-    public const META_CLAIMANT_IMAGE = '_apa_agadev_claimant_image_id';
-
     private const NONCE_ACTION = 'apa_agadev_save_lot_media';
 
     private const NONCE_FIELD = 'apa_agadev_lot_media_nonce';
@@ -149,18 +143,6 @@ final class LotMediaService
             'product' => [
                 'meta_key' => self::META_PRODUCT_IMAGE,
                 'label' => __('Image principale du produit', 'plugin-apa-agadev'),
-            ],
-            'zone' => [
-                'meta_key' => self::META_ZONE_IMAGE,
-                'label' => __('Image de la zone de collecte', 'plugin-apa-agadev'),
-            ],
-            'collector' => [
-                'meta_key' => self::META_COLLECTOR_IMAGE,
-                'label' => __('Image du collecteur', 'plugin-apa-agadev'),
-            ],
-            'claimant' => [
-                'meta_key' => self::META_CLAIMANT_IMAGE,
-                'label' => __('Image du transformateur ou réclamant', 'plugin-apa-agadev'),
             ],
         ];
     }

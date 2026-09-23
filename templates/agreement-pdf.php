@@ -45,13 +45,14 @@ $is_long_value = static function (string $value): bool {
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title><?php echo esc_html($document_title); ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo esc_html($document_title . ' — ' . $document_reference); ?></title>
     <style>
-        @page { margin: 56px 42px 52px; }
+        @page { size: A4; margin: 15mm 12mm; }
         * { box-sizing: border-box; }
         body { color: #202722; font-family: "DejaVu Sans", sans-serif; font-size: 8.4pt; line-height: 1.35; margin: 0; }
         table { border-collapse: collapse; }
-        .national-header { left: 0; margin: 0; position: fixed; right: 0; top: -28px; width: 100%; }
+        .national-header { margin: 0 0 12px; width: 100%; }
         .flag-rule { height: 4px; width: 154px; }
         .flag-rule td { height: 4px; padding: 0; width: 33.33%; }
         .flag-green { background: #07964a; }
@@ -116,9 +117,29 @@ $is_long_value = static function (string $value): bool {
         .administration-signatures td:last-child { border-right: 0; }
         .authenticity { color: #657069; font-size: 7.3pt; line-height: 1.35; margin: 11px 7px 0; }
         .authenticity-title { font-weight: bold; margin-bottom: 3px; text-transform: uppercase; }
+        .print-toolbar { font: 16px/1.5 system-ui, sans-serif; margin-bottom: 24px; }
+        .print-toolbar button { background: #11663a; border: 0; border-radius: 6px; color: white; cursor: pointer; font: inherit; padding: 10px 16px; }
+        .print-toolbar button:focus-visible { outline: 3px solid #e36a00; outline-offset: 3px; }
+        .print-toolbar p { margin: 8px 0 0; }
+        @media screen {
+            html { background: #edf1ee; }
+            body { background: white; margin: 24px auto; max-width: 210mm; padding: 12mm; }
+        }
+        @media print {
+            .print-toolbar { display: none !important; }
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .section-heading, .group-heading { break-after: avoid; }
+            .entry, .field { break-inside: auto; page-break-inside: auto; }
+            .field-value { overflow-wrap: anywhere; }
+        }
     </style>
 </head>
 <body>
+    <nav class="print-toolbar" aria-label="<?php echo esc_attr(__('Impression du document', 'plugin-apa-agadev')); ?>">
+        <button type="button" id="apa-print"><?php esc_html_e('Imprimer / Enregistrer en PDF', 'plugin-apa-agadev'); ?></button>
+        <p><?php esc_html_e('Dans la fenêtre d’impression, choisissez votre imprimante ou « Enregistrer au format PDF ».', 'plugin-apa-agadev'); ?></p>
+        <noscript><p><?php esc_html_e('Utilisez la commande Imprimer de votre navigateur (Ctrl+P ou Cmd+P).', 'plugin-apa-agadev'); ?></p></noscript>
+    </nav>
     <table class="national-header">
         <tr>
             <td><table class="flag-rule"><tr><td class="flag-green"></td><td class="flag-yellow"></td><td class="flag-blue"></td></tr></table></td>
@@ -288,5 +309,11 @@ $is_long_value = static function (string $value): bool {
             <div><?php esc_html_e('La version officielle est celle conservée dans Maivou. La référence unique, la date de génération et l’empreinte de vérification devront être ajoutées automatiquement lors de la génération définitive.', 'plugin-apa-agadev'); ?></div>
         </div>
     </section>
+    <script>
+        // Keep printing user-triggered, so closing the dialog leaves a readable preview.
+        document.getElementById('apa-print').addEventListener('click', function () {
+            window.print();
+        });
+    </script>
 </body>
 </html>
