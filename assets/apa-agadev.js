@@ -729,3 +729,170 @@
         initializeStepForms();
     }
 }());
+
+// Order links retain a server-rendered fallback; modal focus stays contained.
+(function () {
+    var orderTrigger = null;
+    var loadingOrder = false;
+    window.addEventListener('pageshow', function (event) {
+        if (!event.persisted) return;
+        document.querySelectorAll('.apa-orders-form[data-submitting]').forEach(function (form) {
+            delete form.dataset.submitting;
+            form.removeAttribute('aria-busy');
+            form.querySelectorAll('input[type="hidden"][name="apa_order_intent"]').forEach(function (input) { input.remove(); });
+            form.querySelectorAll('button[type="submit"]').forEach(function (button) { button.disabled = false; });
+            form.querySelector('[data-apa-order-feedback]').textContent = '';
+        });
+    });
+
+    function initOrderModal() {
+        document.querySelectorAll('.apa-orders-form').forEach(function (form) {
+            if (form.dataset.uxInitialized) return;
+            form.dataset.uxInitialized = 'true';
+            var controls = form.querySelectorAll('input:not([type="hidden"]), select');
+            controls.forEach(function (control, index) {
+                var error = document.createElement('p');
+                error.className = 'apa-order-field-error';
+                error.id = 'apa-order-error-' + index;
+                error.hidden = true;
+                control.insertAdjacentElement('afterend', error);
+                control.setAttribute('aria-describedby', ((control.getAttribute('aria-describedby') || '') + ' ' + error.id).trim());
+                function validateControl() {
+                    if (control.name === 'order[quantity]') {
+                        control.setCustomValidity('');
+                        if (control.value && (!/^[0-9]+([.,][0-9]{1,3})?$/.test(control.value) || !/[1-9]/.test(control.value))) {
+                            control.setCustomValidity('Saisissez une quantité positive avec au maximum trois décimales.');
+                        }
+                    }
+                }
+                function showError() {
+                    error.textContent = control.validationMessage;
+                    error.hidden = !error.textContent;
+                    control.setAttribute('aria-invalid', error.hidden ? 'false' : 'true');
+                }
+                control.addEventListener('invalid', showError);
+                ['input', 'change'].forEach(function (type) {
+                    control.addEventListener(type, function () {
+                        validateControl();
+                        if (!error.hidden) showError();
+                    });
+                });
+                validateControl();
+            });
+            form.addEventListener('submit', function (event) {
+                if (form.dataset.submitting) { event.preventDefault(); return; }
+                var submitter = event.submitter || form.querySelector('[value="draft"]');
+                // Disabled buttons are omitted from POST: preserve the selected action explicitly.
+                var intent = document.createElement('input');
+                intent.type = 'hidden'; intent.name = 'apa_order_intent'; intent.value = submitter.value;
+                form.appendChild(intent);
+                form.dataset.submitting = 'true';
+                form.setAttribute('aria-busy', 'true');
+                form.querySelector('[data-apa-order-feedback]').textContent = submitter.value === 'draft' ? 'Enregistrement du brouillon…' : 'Soumission de la commande…';
+                form.querySelectorAll('button[type="submit"]').forEach(function (button) { button.disabled = true; });
+            });
+
+            var product = form.querySelector('[data-apa-order-product]');
+            var label = form.querySelector('[data-apa-order-unit-label]');
+            if (!product || !label) return;
+            function updateUnit() {
+                var option = product.options[product.selectedIndex];
+                var unit = option ? (option.getAttribute('data-apa-order-unit') || '').trim() : '';
+                label.textContent = !product.value ? '' : (unit ? '(' + unit + ')' : '(unité non renseignée)');
+                form.querySelectorAll('[data-apa-order-variant]').forEach(function (field) {
+                    var active = field.getAttribute('data-apa-order-variant') === product.value;
+                    field.hidden = !active;
+                    field.style.display = active ? '' : 'none';
+                    field.querySelectorAll('select').forEach(function (select) { select.disabled = !active; });
+                });
+            }
+            product.addEventListener('change', updateUnit);
+            updateUnit();
+        });
+        var modal = document.querySelector('[data-apa-order-modal]');
+        if (!modal) return;
+        if (modal.dataset.orderInitialized) return;
+        modal.dataset.orderInitialized = 'true';
+        var orderWasSaved = new URL(window.location.href).searchParams.has('order_saved');
+        // Opening is transient: refresh returns to the list, while the form action retains its draft UUID.
+        window.history.replaceState(window.history.state, '', modal.getAttribute('data-return-url'));
+        var previousInert = [];
+        var dialog = modal.querySelector('[role="dialog"]');
+        document.body.classList.add('acl_shortcode_modal_open');
+        // Prevent keyboard and assistive-technology access to content behind the modal.
+        var branch = modal;
+        while (branch.parentElement && branch !== document.body) {
+            Array.prototype.forEach.call(branch.parentElement.children, function (sibling) {
+                if (sibling !== branch && sibling.tagName !== 'SCRIPT' && sibling.tagName !== 'STYLE') {
+                    previousInert.push([sibling, sibling.inert]);
+                    sibling.inert = true;
+                }
+            });
+            branch = branch.parentElement;
+        }
+        function closeOrderModal() {
+            // A POST response must be discarded with a GET, as in the APA form.
+            if (modal.querySelector('[role="alert"], [data-apa-order-success]') || orderWasSaved) {
+                window.location.replace(modal.getAttribute('data-return-url'));
+                return;
+            }
+            previousInert.forEach(function (entry) { entry[0].inert = entry[1]; });
+            document.body.classList.remove('acl_shortcode_modal_open');
+            window.history.replaceState({}, '', modal.getAttribute('data-return-url'));
+            modal.remove();
+            var trigger = orderTrigger || document.querySelector('[data-apa-order-open]');
+            if (trigger) trigger.focus();
+            orderTrigger = null;
+        }
+        modal.addEventListener('click', function (event) {
+            if (event.target.closest('.acl_shortcode_agreement_modal_close, .acl_shortcode_agreement_modal_backdrop, .apa-order-cancel')) {
+                event.preventDefault();
+                closeOrderModal();
+            }
+        });
+        var first = dialog.querySelector('.acl_shortcode_agreement_modal_close');
+        (first || dialog).focus();
+        dialog.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeOrderModal();
+            }
+            if (event.key !== 'Tab') return;
+            var items = Array.prototype.filter.call(dialog.querySelectorAll('a[href], button, input:not([type="hidden"]), select, textarea, [tabindex="0"]'), function (el) {
+                return !el.disabled && el.getClientRects().length > 0;
+            });
+            if (!items.length) { event.preventDefault(); dialog.focus(); return; }
+            if (event.shiftKey && document.activeElement === items[0]) {
+                event.preventDefault(); items[items.length - 1].focus();
+            } else if (!event.shiftKey && document.activeElement === items[items.length - 1]) {
+                event.preventDefault(); items[0].focus();
+            }
+        });
+    }
+    document.addEventListener('click', async function (event) {
+        var link = event.target.closest('[data-apa-order-open]');
+        if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        if (loadingOrder) return;
+        loadingOrder = true;
+        link.setAttribute('aria-busy', 'true');
+        try {
+            var response = await fetch(link.href, {credentials: 'same-origin', cache: 'no-store'});
+            if (!response.ok) throw new Error('Order form unavailable');
+            var page = new DOMParser().parseFromString(await response.text(), 'text/html');
+            var modal = page.querySelector('[data-apa-order-modal]');
+            if (!modal) throw new Error('Order modal unavailable');
+            orderTrigger = link;
+            document.body.appendChild(modal);
+            window.history.replaceState({}, '', link.href);
+            initOrderModal();
+        } catch (error) {
+            window.location.assign(link.href);
+        } finally {
+            loadingOrder = false;
+            link.removeAttribute('aria-busy');
+        }
+    });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initOrderModal);
+    else initOrderModal();
+})();

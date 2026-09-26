@@ -350,3 +350,13 @@ pour le champ concerne.
 
 = 2026.7.1 =
 * Creation initiale du plugin.
+
+== Commandes Maivou ==
+
+* `[apa_agadev_orders]` : liste paginee, recherche, detail et acces au formulaire de commande.
+* `[apa_agadev_order_form]` : formulaire fixe de creation de commande.
+* Champs saisis : produit actif, quantite positive (trois decimales maximum), date de livraison attendue facultative.
+* L'acheteur est l'utilisateur Maivou connecte. L'unite est resolue cote serveur depuis `assigned_packaging_unit` du produit ; un produit sans unite ne peut pas etre commande.
+* Les brouillons peuvent etre enregistres, reouverts, modifies et soumis selon les droits renvoyes par Maivou. Aucune sauvegarde automatique a l'ouverture.
+* Le module utilise la session utilisateur du Bridge et les droits API `orders.read`, `orders.write` et l'acces au catalogue `/products`.
+* Aucun telechargement ni impression. Les operations de traitement des lots, livraison et annulation restent dans Maivou.

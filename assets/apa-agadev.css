@@ -2081,3 +2081,177 @@ body.single-apa_lot .acl-footer .acl-footer__socials {
 :where(.acl_shortcode_agreements, .acl_shortcode_agreement_detail) :where(button) {
     font: inherit;
 }
+
+/* Orders share the theme's typography; layout is scoped to their shortcodes. */
+.apa-orders {
+    font-family: inherit;
+    max-width: 70rem;
+    margin: 2rem auto;
+    padding: clamp(1rem, 3vw, 2rem);
+    background: #fff;
+    border-radius: 1rem;
+    color: #292929;
+}
+.apa-orders input, .apa-orders select, .apa-orders-table {
+    overflow-x: auto;
+}
+.apa-orders table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.apa-orders th, .apa-orders td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.apa-orders dl > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-block: 0.75rem;
+}
+.apa-orders dt { font-weight: bold; }
+.apa-orders dd { margin: 0; overflow-wrap: anywhere; }
+
+.apa-orders-list .acl_shortcode_agreements_add {
+    text-decoration: none;
+}
+.apa-orders-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+.apa-orders-search label { display: grid; gap: 0.4rem; }
+.apa-orders-search input, .apa-orders-search button { font: inherit; padding: 0.65rem 1rem; border-radius: 0.5rem; }
+.apa-orders-search input { border: 1px solid #c9cfcc; }
+.apa-orders-search button { border: 0; background: #244d3e; color: #fff; cursor: pointer; }
+[data-apa-order-modal] .apa-orders {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+}
+[data-apa-order-modal] .apa-orders-form { max-width: none; }
+[data-apa-order-modal] .acl_shortcode_agreement_modal_close { text-decoration: none; }
+[data-apa-order-modal] .apa-order-content-title { display: none; }
+
+/* Reuse APA form controls and actions without its multi-step behavior. */
+.apa-orders-form .apa-order-help {
+    color: var(--apa-form-muted);
+    margin-top: 0.4rem;
+}
+.apa-orders-form .apa-order-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--apa-form-green);
+    border-radius: 0.45rem;
+    padding: 0.7rem 1.1rem;
+    text-decoration: none;
+}
+
+/* Keep each fixed order field grouped like an APA field, regardless of theme grid rules. */
+.apa-orders .apa-orders-form.acl_shortcode_apa_form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+}
+.apa-orders-form.acl_shortcode_apa_form > .acl_shortcode_field {
+    display: block;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+.apa-orders-form.acl_shortcode_apa_form .acl_shortcode_label {
+    display: block;
+    margin: 0 0 0.5rem;
+}
+.apa-orders-form.acl_shortcode_apa_form .acl_shortcode_control,
+.apa-orders-form.acl_shortcode_apa_form input,
+.apa-orders-form.acl_shortcode_apa_form select {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.apa-orders-form .apa-order-group {
+    display: grid;
+    gap: 1.25rem;
+    min-width: 0;
+    margin: 0;
+    padding: 1.25rem;
+    border: 1px solid var(--apa-form-border);
+    border-radius: 0.75rem;
+}
+.apa-orders-form .apa-order-group legend {
+    padding-inline: 0.4rem;
+    font-weight: 600;
+}
+.apa-orders-form [data-apa-order-variant][hidden],
+.apa-orders-form .apa-order-field-error[hidden] { display: none; }
+.apa-orders-form .apa-order-field-error { color: #a92323; margin-top: 0.4rem; }
+.apa-orders-form [aria-invalid="true"] { border-color: #a92323; }
+.apa-orders-form button:disabled { opacity: 0.6; cursor: wait; }
+.apa-orders-form [data-apa-order-feedback]:empty { display: none; }
+@media (max-width: 600px) {
+    .apa-orders-form .apa-order-group { padding: 0.75rem; }
+}
+
+/* Order details reuse the APA information cards, including long variant values. */
+.apa-order-detail .acl_shortcode_agreement_meta dd {
+    overflow-wrap: anywhere;
+}
+
+.apa-order-detail-groups {
+    display: grid;
+    gap: 1.25rem;
+}
+.apa-order-detail-group {
+    border: 1px solid #dbe7df;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #fff;
+}
+.apa-order-detail-group h4 {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    background: #edf5f0;
+    color: #183126;
+    font-weight: 700;
+    border-bottom: 1px solid #dbe7df;
+}
+.apa-order-detail .apa-order-detail-group .acl_shortcode_agreement_meta {
+    display: block;
+    margin: 0;
+    padding: 0 1.25rem;
+    background: transparent;
+    border: 0;
+}
+.apa-order-detail-group .acl_shortcode_agreement_meta > div {
+    display: grid;
+    grid-template-columns: minmax(9rem, 1fr) minmax(0, 2fr);
+    gap: 1rem;
+    padding: 1rem 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+}
+.apa-order-detail-group .acl_shortcode_agreement_meta > div + div {
+    border-top: 1px solid #edf0ee;
+}
+.apa-order-detail-group .acl_shortcode_agreement_meta dt {
+    color: #183126;
+    font-weight: 700;
+    margin: 0;
+}
+.apa-order-detail-group .acl_shortcode_agreement_meta dd {
+    color: #343d38;
+    margin: 0;
+    white-space: pre-wrap;
+}
+@media (max-width: 600px) {
+    .apa-order-detail-group .acl_shortcode_agreement_meta > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.35rem;
+    }
+}

@@ -49,6 +49,7 @@ final class Plugin
      */
     public function register(): void
     {
+        (new \PluginApaAgadev\Service\OrderShortcodeService())->register();
         $this->shortcodes->register();
         add_action('init', [$this->lotSync, 'registerPostType']);
         add_action('init', [$this->lotSync, 'registerRewriteRules']);
