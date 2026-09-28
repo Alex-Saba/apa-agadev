@@ -68,10 +68,70 @@ final class OrderDataService
         if (! $identity['ok']) return $identity;
         $response = $this->request('/orders/' . $uuid);
         if (! $response['ok']) return $response;
-        if (($this->entity($response)['buyer_uuid'] ?? null) !== $identity['data']) {
+        $order = $this->entity($response);
+        if (($order['buyer_uuid'] ?? null) !== $identity['data']) {
             return $this->error('Cette commande n’est pas accessible à votre compte.', 403);
         }
+        if (in_array($order['status'] ?? '', ['completed', 'delivered'], true)) {
+            $order['allocated_lots'] = $this->lotsWithQrCodes($order['allocated_lots'] ?? []);
+            if (is_array($response['data']['data'] ?? null)) {
+                $response['data']['data'] = $order;
+            } else {
+                $response['data'] = $order;
+            }
+        }
         return $response;
+    }
+
+    /** Only called after ownership verification; attachment failures must not hide the order. */
+    private function lotsWithQrCodes($lots): array
+    {
+        $result = [];
+        $images = [];
+        foreach (is_array($lots) ? $lots : [] as $lot) {
+            if (! is_array($lot)) continue;
+            $uuid = $lot['uuid'] ?? '';
+            // Never accept a remote image URL or markup from the order snapshot.
+            $lot['qr_image'] = null;
+            if (is_string($uuid) && $this->validUuid($uuid)) {
+                if (! array_key_exists($uuid, $images)) {
+                    $images[$uuid] = $this->lotQrCode($uuid);
+                }
+                $lot['qr_image'] = $images[$uuid];
+            }
+            $result[] = $lot;
+        }
+        return $result;
+    }
+
+    private function lotQrCode(string $uuid): ?string
+    {
+        if (! class_exists(\DOMDocument::class)) return null;
+        $response = $this->request('/lots/' . $uuid);
+        if (! $response['ok']) return null;
+        $attachments = $this->entity($response)['attachments'] ?? [];
+        foreach (is_array($attachments) ? $attachments : [] as $attachment) {
+            if (! is_array($attachment) || ($attachment['action'] ?? '') !== 'lot.document.qr_code'
+                || ! is_string($attachment['uuid'] ?? null) || ! $this->validUuid($attachment['uuid'])
+                || ($attachment['mime_type'] ?? '') !== 'image/svg+xml') continue;
+            $file = $this->request('/lots/' . $uuid . '/attachments/' . $attachment['uuid']);
+            $content = $file['data'] ?? null;
+            if (! $file['ok'] || ! is_string($content) || trim($content) === '' || strlen($content) > 1048576
+                || stripos($content, '<!DOCTYPE') !== false || stripos($content, '<!ENTITY') !== false) continue;
+            $previous = libxml_use_internal_errors(true);
+            try {
+                $document = new \DOMDocument();
+                $valid = $document->loadXML($content, LIBXML_NONET);
+                if (! $valid || $document->documentElement->localName !== 'svg'
+                    || $document->documentElement->namespaceURI !== 'http://www.w3.org/2000/svg') continue;
+                // SVG stays in an isolated image context, never inserted as inline HTML.
+                return 'data:image/svg+xml;base64,' . base64_encode($content);
+            } finally {
+                libxml_clear_errors();
+                libxml_use_internal_errors($previous);
+            }
+        }
+        return null;
     }
 
     /** Filter all API pages before local pagination; never return a partial list on failure. */

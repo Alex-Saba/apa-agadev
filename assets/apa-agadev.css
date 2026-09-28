@@ -2255,3 +2255,52 @@ body.single-apa_lot .acl-footer .acl-footer__socials {
         gap: 0.35rem;
     }
 }
+
+/* Commercial-document layout uses only quantities and identities supplied by Maivou. */
+.apa-order-document {
+    background: #fff;
+    border: 1px solid #dbe7df;
+    border-top: 4px solid #11663a;
+    border-radius: 0.5rem;
+    padding: clamp(1rem, 4vw, 2.5rem);
+}
+.apa-order-document .acl_shortcode_agreement_detail_header {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #dbe7df;
+}
+.apa-order-document-parties {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+.apa-order-document-parties h4 { margin: 0 0 0.5rem; color: #5b6a62; }
+.apa-order-document-parties p { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.apa-order-document-table-wrap { overflow-x: auto; margin-bottom: 2rem; }
+.apa-order-document-table { width: 100%; border-collapse: collapse; text-align: left; }
+.apa-order-document-table caption { text-align: left; font-weight: 700; padding-bottom: 0.75rem; }
+.apa-order-document-table th, .apa-order-document-table td { padding: 1rem; vertical-align: top; border-bottom: 1px solid #dbe7df; }
+.apa-order-document-table thead { background: #edf5f0; color: #183126; }
+.apa-order-document-table tbody th { font-weight: 600; }
+.apa-order-document-number { text-align: right; font-variant-numeric: tabular-nums; }
+.apa-order-document-variants { margin: 0; }
+.apa-order-document-variants > div { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; margin-bottom: 0.35rem; }
+.apa-order-document-variants dt { font-weight: 600; }
+.apa-order-document-variants dd { margin: 0; overflow-wrap: anywhere; }
+.apa-order-document .apa-order-detail-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.apa-order-document .apa-order-detail-group .acl_shortcode_agreement_meta > div { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+@media (max-width: 700px) {
+    .apa-order-document-parties, .apa-order-document .apa-order-detail-groups { grid-template-columns: minmax(0, 1fr); }
+    .apa-order-document-table th, .apa-order-document-table td { padding: 0.75rem; }
+}
+
+.apa-order-lots { margin-top: 2rem; }
+.apa-order-lots h4 { font-weight: 700; margin: 0 0 1rem; }
+.apa-order-lots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; list-style: none; padding: 0; margin: 0; }
+.apa-order-lot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.25rem; border: 1px solid #dbe7df; border-radius: 0.75rem; background: #fff; }
+.apa-order-lot > div { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
+.apa-order-lot-label { display: block; color: #5b6a62; margin-bottom: 0.35rem; }
+.apa-order-lot strong { display: block; color: #183126; }
+.apa-order-lot p { margin: 0.75rem 0 0; }
+.apa-order-lot img { display: block; width: 160px; height: 160px; max-width: 100%; object-fit: contain; background: #fff; padding: 8px; box-sizing: border-box; }
+.apa-order-lot-unavailable { color: #5b6a62; }

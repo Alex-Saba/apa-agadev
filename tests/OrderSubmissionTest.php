@@ -32,6 +32,78 @@ final class OrderSubmissionTest extends TestCase
     private const ORDER = '22222222-2222-4222-8222-222222222222';
     private array $calls = [];
 
+    /** @dataProvider completedLotCases */
+    public function testCompletedOrderLotsUseAuthenticatedExistingQrCodes(string $status, string $failure): void
+    {
+        $lotUuid = '44444444-4444-4444-8444-444444444444';
+        $attachmentUuid = '55555555-5555-4555-8555-555555555555';
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M0 0h20v20H0z"/></svg>';
+        $calls = [];
+        $service = new OrderDataService(function ($args) use ($status, $failure, $lotUuid, $attachmentUuid, $svg, &$calls) {
+            self::assertSame('GET', $args['method']);
+            self::assertSame('user', $args['auth']);
+            $calls[] = $args['endpoint'];
+            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => ['acheteur']]];
+            if ($args['endpoint'] === '/orders/' . self::ORDER) return ['ok' => true, 'data' => ['data' => [
+                'uuid' => self::ORDER, 'buyer_uuid' => $failure === 'foreign' ? $lotUuid : self::BUYER,
+                'status' => $status, 'unit' => 'kg', 'allocated_lots' => $failure === 'empty' ? [] : [[
+                    'uuid' => $lotUuid, 'quantity' => '10.000', 'snapshot' => ['code' => '<LOT-1>'],
+                    'qr_image' => 'https://untrusted.test/image.svg',
+                ]],
+            ]]];
+            if ($args['endpoint'] === '/lots/' . $lotUuid) {
+                if ($failure === 'denied') return ['ok' => false, 'status' => 403];
+                return ['ok' => true, 'data' => ['attachments' => $failure === 'missing' ? [] : [[
+                    'uuid' => $attachmentUuid, 'action' => 'lot.document.qr_code', 'mime_type' => 'image/svg+xml',
+                ]]]];
+            }
+            self::assertSame('/lots/' . $lotUuid . '/attachments/' . $attachmentUuid, $args['endpoint']);
+            return ['ok' => $failure !== 'download', 'data' => $failure === 'invalid' ? '<html>Login</html>' : $svg];
+        });
+        if ($failure === 'foreign') {
+            self::assertSame(403, $service->ownOrder(self::ORDER)['status']);
+            self::assertCount(2, $calls);
+            return;
+        }
+        $GLOBALS['apa_test_logged_in'] = true;
+        $_GET = ['order_uuid' => self::ORDER];
+        try {
+            $html = (new OrderShortcodeService($service))->render();
+            self::assertStringNotContainsString('https://untrusted.test', $html);
+            if (! in_array($status, ['completed', 'delivered'], true)) {
+                self::assertCount(2, $calls);
+                self::assertStringNotContainsString('data:image/svg+xml', $html);
+                return;
+            }
+            self::assertStringContainsString('Lots composant la commande', $html);
+            if ($failure === 'empty') {
+                self::assertStringContainsString('Les informations des lots ne sont pas disponibles', $html);
+                self::assertCount(2, $calls);
+            } else {
+                self::assertStringContainsString('&lt;LOT-1&gt;', $html);
+                if ($failure === '') {
+                    self::assertStringContainsString('data:image/svg+xml;base64,' . base64_encode($svg), $html);
+                    self::assertStringContainsString('QR code du lot &lt;LOT-1&gt;', $html);
+                } else {
+                    self::assertStringContainsString('QR code indisponible', $html);
+                    self::assertStringNotContainsString('data:image/svg+xml', $html);
+                }
+            }
+        } finally {
+            $_GET = [];
+            unset($GLOBALS['apa_test_logged_in']);
+        }
+    }
+
+    public static function completedLotCases(): array
+    {
+        return [
+            ['completed', ''], ['delivered', ''], ['submitted', ''],
+            ['completed', 'denied'], ['completed', 'missing'], ['completed', 'download'],
+            ['completed', 'invalid'], ['completed', 'empty'], ['completed', 'foreign'],
+        ];
+    }
+
     private function service(?string $unit = 'kg', string $status = 'draft', bool $submitFails = false): OrderDataService
     {
         return new OrderDataService(function (array $args) use ($unit, $status, $submitFails): array {
@@ -282,7 +354,7 @@ final class OrderSubmissionTest extends TestCase
         $GLOBALS['apa_test_logged_in'] = true;
         $service = new OrderDataService(function ($args) {
             self::assertSame('GET', $args['method']);
-            $order = ['uuid' => self::ORDER, 'buyer_uuid' => self::BUYER, 'code' => '<script>bad</script>', 'created_at' => '2026-09-26T16:17:03Z', 'meta' => ['formes' => 'Poudre'], 'status' => 'submitted', 'product' => ['name' => 'Résine'], 'quantity' => '10.000', 'unit' => 'kg', 'allowed_actions' => ['update']];
+            $order = ['uuid' => self::ORDER, 'buyer_uuid' => self::BUYER, 'buyer' => ['firstname' => '<Alex>', 'lastname' => 'Acheteur'], 'code' => '<script>bad</script>', 'created_at' => '2026-09-26T16:17:03Z', 'meta' => ['formes' => 'Poudre'], 'status' => 'submitted', 'product' => ['name' => 'Résine'], 'quantity' => '10.000', 'unit' => 'kg', 'allowed_actions' => ['update']];
             if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => [['name' => 'acheteur']]]];
             if ($args['endpoint'] === '/orders/context') {
                 return ['ok' => true, 'data' => ['data' => ['create' => true]]];
@@ -305,6 +377,10 @@ final class OrderSubmissionTest extends TestCase
             self::assertStringContainsString('acl_shortcode_agreement_detail_header', $html);
             self::assertStringContainsString('26/09/2026', $html);
             self::assertStringContainsString('Formes', $html);
+            self::assertStringContainsString('<caption>Articles commandés</caption>', $html);
+            self::assertStringContainsString('&lt;Alex&gt; Acheteur', $html);
+            self::assertStringContainsString('<th scope="col">Unité</th>', $html);
+            self::assertStringContainsString('apa-order-document-number">10.000</td>', $html);
         } finally {
             $_GET = [];
             unset($GLOBALS['apa_test_logged_in']);
