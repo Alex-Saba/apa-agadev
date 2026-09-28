@@ -44,6 +44,12 @@ final class OrderShortcodeService
                 $this->submission = $this->data->error('Réponse d’enregistrement invalide.', 502);
                 return;
             }
+            // Email failure must never turn a confirmed submission into a failed order.
+            try {
+                (new OrderConfirmationService())->send($this->submission, $this->input($_POST, 'apa_order_intent'));
+            } catch (\Throwable $error) {
+                error_log('[APA Agadev] Order confirmation could not run (' . get_class($error) . ')');
+            }
             // Redirect after a successful POST so refreshing never creates another order.
             wp_safe_redirect($this->url(['order_uuid' => $uuid, 'order_saved' => '1']));
             exit;
