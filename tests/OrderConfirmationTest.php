@@ -60,7 +60,7 @@ namespace {
             $calls = [];
             $data = new \PluginApaAgadev\Service\OrderDataService(function ($args) use ($response, &$calls) {
                 $calls[] = $args['endpoint'];
-                if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => '33333333-3333-4333-8333-333333333333', 'roles' => ['acheteur']]];
+                if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => '33333333-3333-4333-8333-333333333333', 'permissions' => ['order-read']]];
                 if ($args['endpoint'] === '/orders/context') return ['ok' => true, 'data' => ['create' => true]];
                 if ($args['endpoint'] === '/products') return ['ok' => true, 'data' => ['data' => [[
                     'uuid' => '11111111-1111-4111-8111-111111111111', 'is_active' => true, 'assigned_packaging_unit' => 'kg',

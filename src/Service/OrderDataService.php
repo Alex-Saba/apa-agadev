@@ -43,16 +43,16 @@ final class OrderDataService
         $response = $this->request('/me');
         if (! $response['ok']) return $response;
         $profile = $this->entity($response);
-        $roles = $profile['user']['roles'] ?? $profile['roles'] ?? [];
-        $isBuyer = false;
-        foreach (is_array($roles) ? $roles : [] as $role) {
-            if ((is_array($role) ? ($role['name'] ?? '') : $role) === 'acheteur') {
-                $isBuyer = true;
+        $permissions = $profile['user']['permissions'] ?? $profile['permissions'] ?? [];
+        $canReadOrders = false;
+        foreach (is_array($permissions) ? $permissions : [] as $permission) {
+            if ((is_array($permission) ? ($permission['name'] ?? '') : $permission) === 'order-read') {
+                $canReadOrders = true;
                 break;
             }
         }
-        if (! $isBuyer) {
-            return $this->error('Cette rubrique est réservée aux comptes Maivou avec le profil Acheteur.', 403) + ['reason' => 'buyer_role_required'];
+        if (! $canReadOrders) {
+            return $this->error('La consultation des commandes nécessite la permission order-read.', 403) + ['reason' => 'order_read_required'];
         }
         $uuid = $profile['user']['uuid'] ?? $profile['uuid'] ?? null;
         if (! is_string($uuid) || ! $this->validUuid($uuid)) {

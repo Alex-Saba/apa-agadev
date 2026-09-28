@@ -72,7 +72,7 @@ final class OrderShortcodeService
 
     private function error(array $response): string
     {
-        if (($response['reason'] ?? '') === 'buyer_role_required') {
+        if (($response['reason'] ?? '') === 'order_read_required') {
             return '<div class="acl_shortcode_notice acl_shortcode_notice--error" role="alert">' . esc_html($response['error']) . '</div>';
         }
         if ((int) ($response['status'] ?? 0) === 403) {

@@ -43,7 +43,7 @@ final class OrderSubmissionTest extends TestCase
             self::assertSame('GET', $args['method']);
             self::assertSame('user', $args['auth']);
             $calls[] = $args['endpoint'];
-            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => ['acheteur']]];
+            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'permissions' => ['order-read']]];
             if ($args['endpoint'] === '/orders/' . self::ORDER) return ['ok' => true, 'data' => ['data' => [
                 'uuid' => self::ORDER, 'buyer_uuid' => $failure === 'foreign' ? $lotUuid : self::BUYER,
                 'status' => $status, 'unit' => 'kg', 'allocated_lots' => $failure === 'empty' ? [] : [[
@@ -109,7 +109,7 @@ final class OrderSubmissionTest extends TestCase
         return new OrderDataService(function (array $args) use ($unit, $status, $submitFails): array {
             $this->calls[] = $args;
             $data = [];
-            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => [['name' => 'acheteur']]]];
+            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'permissions' => [['name' => 'order-read']]]];
             if ($args['endpoint'] === '/orders/context') {
                 $data = ['data' => ['create' => true]];
             } elseif ($args['endpoint'] === '/products') {
@@ -128,9 +128,9 @@ final class OrderSubmissionTest extends TestCase
         return ['product_uuid' => self::PRODUCT, 'quantity' => '10.001', 'expected_delivery_date' => '', 'unit' => 'forged', 'buyer_uuid' => 'forged', 'status' => 'delivered'];
     }
 
-    public function testBuyerRoleIsRequiredIndependentlyOfPermissions(): void
+    public function testReadPermissionIsRequiredIndependentlyOfRole(): void
     {
-        foreach ([['acheteur', [], true], ['transformateur', ['order-read'], false]] as [$role, $permissions, $allowed]) {
+        foreach ([['acheteur', [], false], ['transformateur', ['order-read'], true], ['acheteur', ['order-create'], false], ['', [['name' => 'order-read']], true]] as [$role, $permissions, $allowed]) {
             $calls = [];
             $service = new OrderDataService(function ($args) use ($role, $permissions, &$calls) {
                 $calls[] = $args['endpoint'];
@@ -151,7 +151,7 @@ final class OrderSubmissionTest extends TestCase
         $writes = [];
         $service = new OrderDataService(function ($args) use (&$writes) {
             if ($args['method'] !== 'GET') $writes[] = $args;
-            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => [['name' => 'acheteur']]]];
+            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'permissions' => [['name' => 'order-read']]]];
             if ($args['endpoint'] !== '/orders') {
                 return ['ok' => true, 'data' => ['uuid' => self::ORDER, 'buyer_uuid' => self::PRODUCT, 'status' => 'draft', 'allowed_actions' => ['update']]];
             }
@@ -180,7 +180,7 @@ final class OrderSubmissionTest extends TestCase
             foreach (['draft', 'submitted'] as $status) {
                 $service = new OrderDataService(function ($args) use ($status) {
                     self::assertSame('GET', $args['method']);
-                    if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => [['name' => 'acheteur']]]];
+                    if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'permissions' => [['name' => 'order-read']]]];
                     if ($args['endpoint'] === '/orders') {
                         return ['ok' => true, 'data' => ['data' => [], 'meta' => ['last_page' => 1]]];
                     }
@@ -355,7 +355,7 @@ final class OrderSubmissionTest extends TestCase
         $service = new OrderDataService(function ($args) {
             self::assertSame('GET', $args['method']);
             $order = ['uuid' => self::ORDER, 'buyer_uuid' => self::BUYER, 'buyer' => ['firstname' => '<Alex>', 'lastname' => 'Acheteur'], 'code' => '<script>bad</script>', 'created_at' => '2026-09-26T16:17:03Z', 'meta' => ['formes' => 'Poudre'], 'status' => 'submitted', 'product' => ['name' => 'Résine'], 'quantity' => '10.000', 'unit' => 'kg', 'allowed_actions' => ['update']];
-            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => [['name' => 'acheteur']]]];
+            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'permissions' => [['name' => 'order-read']]]];
             if ($args['endpoint'] === '/orders/context') {
                 return ['ok' => true, 'data' => ['data' => ['create' => true]]];
             }
@@ -393,7 +393,7 @@ final class OrderSubmissionTest extends TestCase
         $_GET = ['view' => 'commandes'];
         $service = new OrderDataService(function ($args) {
             self::assertSame('GET', $args['method']);
-            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'roles' => [['name' => 'acheteur']]]];
+            if ($args['endpoint'] === '/me') return ['ok' => true, 'data' => ['uuid' => self::BUYER, 'permissions' => [['name' => 'order-read']]]];
             if ($args['endpoint'] === '/orders/context') {
                 return ['ok' => true, 'data' => ['data' => ['create' => true]]];
             }
