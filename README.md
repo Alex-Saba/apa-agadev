@@ -211,3 +211,28 @@ composer validate
 find . -name '*.php' -not -path './vendor/*' -exec php -l {} \;
 git diff --check
 ```
+
+### Produits synchronisés et photos des lots
+
+Le plugin lit `GET /api/machine/products` via `acl_flows_api_call()` d’ACL
+WordPress API Bridge, avec les client credentials et le scope `products.read`.
+La réponse attendue est une liste complète de produits actifs (`id`, `sku`,
+`name`, `description`). Le client machine doit autoriser ce scope en plus de
+`lots.read`.
+
+La synchronisation est horaire (WP-Cron) et peut être lancée depuis
+**Réglages → APA Agadev → Synchronisation des produits**. Les produits sont
+consultables dans **Produits** ; ouvrez un produit et définissez sa photo
+avec **Photo du produit**, puis enregistrez la fiche.
+
+Les lots associent leur `product.code` au `sku` du catalogue local. Ils affichent
+le nom, le code, la description et la photo du produit synchronisé. La photo
+locale est conservée lors des mises à jour. Sans photo produit, l’image définie
+sur le lot est utilisée. Sans produit local correspondant (ou si le code est
+ambigu), les informations synchronisées avec le lot sont conservées.
+
+L’identité de synchronisation est l’ID Maivou : une mise à jour ne crée pas de
+nouvelle fiche et conserve sa photo. L’API lots ne fournit pas cet ID ni l’UUID
+du produit : un changement de code nécessite aussi la resynchronisation des
+lots. Les produits absents du catalogue actif sont conservés pour les lots
+historiques ; une erreur API ne supprime pas les données locales.

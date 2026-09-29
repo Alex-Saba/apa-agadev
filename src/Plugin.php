@@ -9,6 +9,7 @@ use PluginApaAgadev\Service\AgreementPdfService;
 use PluginApaAgadev\Service\AgreementPresentationService;
 use PluginApaAgadev\Service\LotMediaService;
 use PluginApaAgadev\Service\LotSyncService;
+use PluginApaAgadev\Service\ProductSyncService;
 use PluginApaAgadev\Service\MaivouDataService;
 use PluginApaAgadev\Service\ShortcodeService;
 
@@ -51,6 +52,11 @@ final class Plugin
     {
         (new \PluginApaAgadev\Service\OrderShortcodeService())->register();
         $this->shortcodes->register();
+        $products = new ProductSyncService(new MaivouDataService());
+        add_action('init', [$products, 'registerPostType']);
+        add_action('init', [$products, 'ensureScheduled']);
+        add_action(ProductSyncService::CRON_HOOK, [$products, 'syncProducts']);
+        add_action('admin_post_' . ProductSyncService::ADMIN_ACTION, [$products, 'handleManualSync']);
         add_action('init', [$this->lotSync, 'registerPostType']);
         add_action('init', [$this->lotSync, 'registerRewriteRules']);
         add_action('init', [$this->lotSync, 'ensureScheduled']);

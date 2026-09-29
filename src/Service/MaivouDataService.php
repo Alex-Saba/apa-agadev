@@ -216,6 +216,17 @@ final class MaivouDataService
         ]);
     }
 
+    /** Reads the complete product catalog through the Bridge machine credentials. */
+    public function getProducts(): array
+    {
+        return $this->call([
+            'endpoint' => '/machine/products',
+            'method' => 'GET',
+            'scope' => 'products.read',
+            'user_id' => 0,
+        ]);
+    }
+
     /**
      * Recursively discovers protected option endpoints in the catalog.
      *

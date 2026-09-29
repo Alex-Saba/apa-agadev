@@ -63,6 +63,53 @@ final class AdminDocumentationService
                 </div>
             <?php endif; ?>
 
+            <?php
+            $product_sync = (int) get_option(ProductSyncService::OPTION_LAST_SYNC, 0);
+            $product_result = get_option(ProductSyncService::OPTION_LAST_RESULT, []);
+            $product_result = is_array($product_result) ? $product_result : [];
+            $product_sync_state = isset($_GET['apa_product_sync']) && is_string($_GET['apa_product_sync'])
+                ? sanitize_key(wp_unslash($_GET['apa_product_sync']))
+                : '';
+            ?>
+            <?php if (in_array($product_sync_state, ['success', 'error'], true)) : ?>
+                <div class="notice notice-<?php echo esc_attr($product_sync_state); ?> is-dismissible">
+                    <p><?php echo esc_html((string) ($product_result['message'] ?? __('Synchronisation des produits terminée.', 'plugin-apa-agadev'))); ?></p>
+                </div>
+            <?php endif; ?>
+            <h2><?php esc_html_e('Synchronisation des produits', 'plugin-apa-agadev'); ?></h2>
+            <p>
+                <?php esc_html_e('Le catalogue des produits est synchronisé chaque heure.', 'plugin-apa-agadev'); ?>
+            </p>
+            <table class="widefat striped" role="presentation">
+                <tbody>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Dernière synchronisation', 'plugin-apa-agadev'); ?></th>
+                        <td>
+                            <?php echo esc_html($product_sync > 0 ? date_i18n('d/m/Y H:i:s', $product_sync) : __('Jamais', 'plugin-apa-agadev')); ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Produits synchronisés', 'plugin-apa-agadev'); ?></th>
+                        <td><?php echo esc_html((string) ((int) ($product_result['synced'] ?? 0))); ?></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Erreurs', 'plugin-apa-agadev'); ?></th>
+                        <td><?php echo esc_html((string) ((int) ($product_result['errors'] ?? 0))); ?></td>
+                    </tr>
+                    <?php if (! empty($product_result['message'])) : ?>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Résultat', 'plugin-apa-agadev'); ?></th>
+                            <td><?php echo esc_html((string) $product_result['message']); ?></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="<?php echo esc_attr(ProductSyncService::ADMIN_ACTION); ?>">
+                <?php wp_nonce_field(ProductSyncService::NONCE_ACTION); ?>
+                <?php submit_button(__('Synchroniser maintenant', 'plugin-apa-agadev'), 'secondary'); ?>
+            </form>
+
             <h2><?php esc_html_e('Synchronisation des lots finalisés', 'plugin-apa-agadev'); ?></h2>
             <p>
                 <?php esc_html_e('Le cron horaire conserve localement les lots vendus ou annulés ayant une request associée.', 'plugin-apa-agadev'); ?>

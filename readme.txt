@@ -4,7 +4,7 @@ Tags: apa, agadev, maivou, agreements, lots
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 2026.8.8
+Stable tag: 2026.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,11 @@ pour le champ concerne.
 * verifier que le serveur WordPress peut joindre `api.github.com`.
 
 == Changelog ==
+
+= 2026.9.2 =
+* Synchronisation du catalogue Produits et utilisation de leurs photos sur les lots.
+* Notification du resultat de la synchronisation manuelle des produits.
+* Harmonisation des libelles du menu Produits et de la version du plugin.
 
 = 2026.8.8 =
 * Impression et enregistrement PDF des demandes APA via le navigateur, avec conservation des controles d'acces.

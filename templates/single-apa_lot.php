@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 use PluginApaAgadev\Service\LotMediaService;
 use PluginApaAgadev\Service\LotSyncService;
+use PluginApaAgadev\Service\ProductSyncService;
 
 if (! defined('ABSPATH')) {
     exit;
@@ -56,6 +57,9 @@ while (have_posts()) :
     $claimed_at_label = $format_public_date($claim['claimed_at'] ?? null);
     $post_id = get_the_ID();
     $product_image_id = absint(get_post_meta($post_id, LotMediaService::META_PRODUCT_IMAGE, true));
+    $resolved_product = ProductSyncService::resolveForLot($product, $product_image_id);
+    $product = $resolved_product['product'];
+    $product_image_id = $resolved_product['image_id'];
     $product_name = trim((string) ($product['name'] ?? ''));
     $product_code = trim((string) ($product['code'] ?? ''));
     $product_description = trim((string) ($product['description'] ?? ''));

@@ -3,7 +3,7 @@
  * Plugin Name: APA Agadev
  * Plugin URI: https://agadev.com
  * Description: Plugin WordPress APA Agadev.
- * Version: 2026.9.1
+ * Version: 2026.9.2
  * Author: ACL
  * Author URI: https://agadev.com
  * Text Domain: plugin-apa-agadev
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('PLUGIN_APA_AGADEV_VERSION', '2026.8.8');
+define('PLUGIN_APA_AGADEV_VERSION', '2026.9.2');
 define('PLUGIN_APA_AGADEV_FILE', __FILE__);
 define('PLUGIN_APA_AGADEV_PATH', plugin_dir_path(__FILE__));
 define('PLUGIN_APA_AGADEV_URL', plugin_dir_url(__FILE__));
@@ -63,6 +63,8 @@ function plugin_apa_agadev_activate(): void
 {
     $data = new \PluginApaAgadev\Service\MaivouDataService();
     $lot_sync = new \PluginApaAgadev\Service\LotSyncService($data);
+    (new \PluginApaAgadev\Service\ProductSyncService($data))->registerPostType();
+    \PluginApaAgadev\Service\ProductSyncService::schedule();
     $lot_sync->registerPostType();
     $lot_sync->registerRewriteRules();
     \PluginApaAgadev\Service\LotSyncService::schedule();
@@ -75,6 +77,7 @@ function plugin_apa_agadev_activate(): void
 function plugin_apa_agadev_deactivate(): void
 {
     \PluginApaAgadev\Service\LotSyncService::unschedule();
+    \PluginApaAgadev\Service\ProductSyncService::unschedule();
     flush_rewrite_rules();
 }
 
